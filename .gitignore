@@ -103,3 +103,9 @@ nul
 
 # Auto Claude data directory
 .auto-claude/
+
+# Claude context files (contain sensitive infrastructure details)
+CLAUDE.md
+CLAUDELONGTERM.md
+.claude/templates/CLAUDE-TEMPLATE.md
+.claude/templates/CLAUDELONGTERM-TEMPLATE.md
