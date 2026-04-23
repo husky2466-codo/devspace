@@ -1,0 +1,95 @@
+/* Dev-Space IDE — design tokens
+ * Three themes, scoped via [data-theme] on <html>. Default = terminal.
+ *
+ * Usage:
+ *   <html data-theme="terminal|graphite|paper">
+ *   color: var(--text);
+ *   background: var(--bg);
+ */
+
+:root {
+  --font-ui:   'Geist', 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Geist Mono', ui-monospace, Consolas, monospace;
+}
+
+/* ── Terminal (default) ── */
+[data-theme="terminal"],
+:root {
+  --bg:            #000000;
+  --bg-raised:     #0a0a0a;
+  --bg-sunken:     #000000;
+  --bg-pane:       #0a0a0a;
+  --chrome:        #050505;
+  --border:        #1c1c1c;
+  --border-strong: #2a2a2a;
+  --border-active: #f5efe0;
+  --text:          #f5efe0;
+  --text-muted:    #8a857a;
+  --text-dim:      #4a463e;
+  --accent:        #f5efe0;
+  --accent-soft:   #1a1813;
+  --ok:            #7ab87a;
+  --warn:          #c9a34a;
+  --err:           #d05858;
+  --info:          #6a9ab0;
+  --running:       #c9a34a;
+  --pane-ring:     #f5efe0;
+  --radius:        0px;
+  --radius-lg:     2px;
+  --accent-global:      #8fb3c9;
+  --accent-global-soft: #0e1418;
+}
+
+/* ── Graphite ── */
+[data-theme="graphite"] {
+  --bg:            #17171a;
+  --bg-raised:     #1d1d20;
+  --bg-sunken:     #121214;
+  --bg-pane:       #1a1a1d;
+  --chrome:        #0f0f11;
+  --border:        #26262a;
+  --border-strong: #323237;
+  --border-active: #c7ff3d;
+  --text:          #ededf0;
+  --text-muted:    #89898f;
+  --text-dim:      #55555b;
+  --accent:        #c7ff3d;
+  --accent-soft:   #2a3311;
+  --ok:            #4ade80;
+  --warn:          #fbbf24;
+  --err:           #f87171;
+  --info:          #60a5fa;
+  --running:       #c7ff3d;
+  --pane-ring:     #c7ff3d;
+  --radius:        3px;
+  --radius-lg:     4px;
+  --accent-global:      #7dd3fc;
+  --accent-global-soft: #0f1e26;
+}
+
+/* ── Paper ── */
+[data-theme="paper"] {
+  --bg:            #f4f1ea;
+  --bg-raised:     #ffffff;
+  --bg-sunken:     #ebe7dd;
+  --bg-pane:       #fbf9f4;
+  --chrome:        #ebe7dd;
+  --border:        #d8d3c6;
+  --border-strong: #b8b3a4;
+  --border-active: #14140f;
+  --text:          #14140f;
+  --text-muted:    #6b6858;
+  --text-dim:      #a8a494;
+  --accent:        #14140f;
+  --accent-soft:   #ebe7dd;
+  --ok:            #2f7a3a;
+  --warn:          #a36c00;
+  --err:           #a8312a;
+  --info:          #2d5f8a;
+  --running:       #a36c00;
+  --pane-ring:     #14140f;
+  --radius:        2px;
+  --radius-lg:     3px;
+  --accent-global:      #1f3a5f;
+  --accent-global-soft: #dde4ee;
+}
