@@ -72,7 +72,7 @@ export default function NativeTitleBar({ projectName = 'dev-space', branch = 'ma
           {modified > 0 && (
             <span style={{
               fontFamily: 'var(--font-mono)', fontSize: 9.5,
-              color: 'var(--text-dim)', letterSpacing: '0.08em',
+              color: 'var(--warn)', letterSpacing: '0.08em',
             }}>
               {modified} MODIFIED
             </span>
