@@ -7,7 +7,7 @@ export default function ResizeHandle({ side = 'right', onResize, min = 180, max 
     const move = (ev) => {
       const dx = ev.clientX - startX;
       const raw = side === 'right' ? startW + dx : startW - dx;
-      onResize(Math.max(min, Math.min(max, raw)));
+      onResize?.(Math.max(min, Math.min(max, raw)));
     };
 
     const up = () => {
