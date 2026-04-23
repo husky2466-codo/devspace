@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Dev-Space.ai · 4 new surfaces</title>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; padding: 0; background: #f0eee9; font-family: 'Geist', ui-sans-serif, system-ui, sans-serif; height: 100%; overflow: hidden; }
+  #root { width: 100vw; height: 100vh; }
+  * { box-sizing: border-box; }
+  @keyframes smPulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.55; transform: scale(1.25); } }
+  @keyframes smCaret { 0%,49% { opacity: 1; } 50%,100% { opacity: 0; } }
+  @keyframes smFlow { 0% { stroke-dashoffset: 0; } 100% { stroke-dashoffset: -24; } }
+  @keyframes smShimmer { 0% { opacity: 0.4; } 50% { opacity: 1; } 100% { opacity: 0.4; } }
+  *::-webkit-scrollbar { width: 6px; height: 6px; }
+  *::-webkit-scrollbar-thumb { background: rgba(128,128,128,0.22); border-radius: 3px; }
+  *::-webkit-scrollbar-track { background: transparent; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="surfaces/tokens.jsx"></script>
+<script type="text/babel" src="surfaces/design-canvas.jsx"></script>
+<script type="text/babel" src="surfaces/primitives.jsx"></script>
+<script type="text/babel" src="surfaces/surface-editor.jsx"></script>
+<script type="text/babel" src="surfaces/surface-global.jsx"></script>
+<script type="text/babel" src="surfaces/surface-chrome.jsx"></script>
+<script type="text/babel" src="surfaces/surface-orchestration.jsx"></script>
+<script type="text/babel" src="surfaces/surface-editor-states.jsx"></script>
+<script type="text/babel" src="surfaces/app.jsx"></script>
+</body>
+</html>
