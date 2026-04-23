@@ -69,7 +69,7 @@ export default function FileTree({ files, depth = 0, onFileOpen }) {
   return (
     <>
       {files.map((f, i) => (
-        <FileNode key={i} node={f} depth={depth} onFileOpen={onFileOpen} />
+        <FileNode key={f.name} node={f} depth={depth} onFileOpen={onFileOpen} />
       ))}
     </>
   );

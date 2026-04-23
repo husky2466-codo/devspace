@@ -20,13 +20,11 @@ export default function IDE() {
     return localStorage.getItem('ds.v3.tone') || 'terminal';
   });
 
-  const saved = loadLayout();
-
-  const [leftCollapsed, setLeftCollapsed]   = useState(saved.leftCollapsed ?? false);
-  const [rightCollapsed, setRightCollapsed] = useState(saved.rightCollapsed ?? false);
-  const [leftWidth, setLeftWidth]           = useState(saved.leftWidth ?? 220);
-  const [rightWidth, setRightWidth]         = useState(saved.rightWidth ?? 340);
-  const [railPage, setRailPage]             = useState(saved.railPage ?? 'projects');
+  const [leftCollapsed, setLeftCollapsed]   = useState(() => loadLayout().leftCollapsed ?? false);
+  const [rightCollapsed, setRightCollapsed] = useState(() => loadLayout().rightCollapsed ?? false);
+  const [leftWidth, setLeftWidth]           = useState(() => loadLayout().leftWidth ?? 220);
+  const [rightWidth, setRightWidth]         = useState(() => loadLayout().rightWidth ?? 340);
+  const [railPage, setRailPage]             = useState(() => loadLayout().railPage ?? 'projects');
 
   const [projects]       = useState(SEED_PROJECTS);
   const [activeProjectId, setActiveProjectId] = useState('forge');
@@ -58,7 +56,7 @@ export default function IDE() {
   const handleCollapsedDotSelect = (id) => {
     setActiveProjectId(id);
     setLeftCollapsed(false);
-    setRailPage('projects');
+    setRailPage('files');
   };
 
   const projectTabs = projects.map((p) => ({
