@@ -71,7 +71,7 @@ function buildMenu() {
       label: 'Session',
       submenu: [
         { label: 'New Terminal', accelerator: 'Cmd+T', click: () => {} },
-        { label: 'Close Terminal', accelerator: 'Cmd+W', click: () => {} },
+        { label: 'Close Terminal', accelerator: 'Ctrl+W', click: () => {} },
         { type: 'separator' },
         { label: 'Next Terminal', accelerator: 'Cmd+]', click: () => {} },
         { label: 'Previous Terminal', accelerator: 'Cmd+[', click: () => {} },

@@ -4,7 +4,7 @@
   "description": "Dev-Space.ai — agentic IDE",
   "main": "src/main.cjs",
   "scripts": {
-    "dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
+    "dev": "concurrently \"cross-env NODE_ENV=development vite\" \"wait-on http://localhost:5173 && cross-env NODE_ENV=development electron .\"",
     "build": "vite build",
     "electron": "electron .",
     "preview": "vite preview"
