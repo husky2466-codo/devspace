@@ -4,8 +4,10 @@ import TopBar from './components/TopBar.jsx';
 import StatusBar from './components/StatusBar.jsx';
 import LeftRail from './components/LeftRail/index.jsx';
 import CollapsedRail from './components/LeftRail/CollapsedRail.jsx';
+import Workspace from './components/Workspace/index.jsx';
 import ResizeHandle from './components/primitives/ResizeHandle.jsx';
 import { SEED_PROJECTS } from './data/seedProjects.js';
+import { SEED_TERMINALS, SEED_FINISHED_IDS, makeTerminal } from './data/seedTerminals.js';
 
 function loadLayout() {
   try {
@@ -26,18 +28,20 @@ export default function IDE() {
   const [rightWidth, setRightWidth]         = useState(() => loadLayout().rightWidth ?? 340);
   const [railPage, setRailPage]             = useState(() => loadLayout().railPage ?? 'projects');
 
-  const [projects]       = useState(SEED_PROJECTS);
+  const [projects]        = useState(SEED_PROJECTS);
   const [activeProjectId, setActiveProjectId] = useState('forge');
+
+  const [terminals, setTerminals]       = useState(SEED_TERMINALS);
+  const [activeTermId, setActiveTermId] = useState('a1');
+  const [finishedIds, setFinishedIds]   = useState(SEED_FINISHED_IDS);
 
   const [settingsOpen, setSettingsOpen] = useState(false);
 
-  // Apply theme to <html data-theme="..."> and persist
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', themeId);
     localStorage.setItem('ds.v3.tone', themeId);
   }, [themeId]);
 
-  // Persist layout state
   useEffect(() => {
     localStorage.setItem('ds.v3.layout', JSON.stringify({
       leftCollapsed, rightCollapsed, leftWidth, rightWidth, railPage,
@@ -46,17 +50,44 @@ export default function IDE() {
 
   const activeProject = projects.find((p) => p.id === activeProjectId) ?? projects[0];
 
-  // Clicking a project row → set active + navigate to files page
   const handleSelectProject = (id) => {
     setActiveProjectId(id);
     setRailPage('files');
   };
 
-  // Clicking expand on a collapsed-rail dot → expand + focus project
   const handleCollapsedDotSelect = (id) => {
     setActiveProjectId(id);
     setLeftCollapsed(false);
     setRailPage('files');
+  };
+
+  const handleSpawnTerm = () => {
+    const t = makeTerminal();
+    setTerminals((prev) => [...prev, t]);
+    setActiveTermId(t.id);
+  };
+
+  const handleCloseTerm = (id) => {
+    setTerminals((prev) => {
+      const next = prev.filter((t) => t.id !== id);
+      if (id === activeTermId) {
+        setActiveTermId(next.length > 0 ? next[next.length - 1].id : null);
+      }
+      return next;
+    });
+    setFinishedIds((prev) => {
+      const n = new Set(prev);
+      n.delete(id);
+      return n;
+    });
+  };
+
+  const handleAcknowledge = (id) => {
+    setFinishedIds((prev) => {
+      const n = new Set(prev);
+      n.delete(id);
+      return n;
+    });
   };
 
   const projectTabs = projects.map((p) => ({
@@ -69,7 +100,6 @@ export default function IDE() {
   return (
     <div style={{ width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
-      {/* 28px native title bar */}
       <NativeTitleBar
         projectName={activeProject.name}
         branch={activeProject.branch}
@@ -77,7 +107,6 @@ export default function IDE() {
         modified={activeProject.dirty ? 2 : 0}
       />
 
-      {/* 38px app top bar */}
       <TopBar
         activeThemeId={themeId}
         onThemeChange={setThemeId}
@@ -91,10 +120,8 @@ export default function IDE() {
         onSettingsOpen={() => setSettingsOpen(true)}
       />
 
-      {/* Body: left rail + center + right drawer stub */}
       <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
 
-        {/* Left rail */}
         {leftCollapsed ? (
           <CollapsedRail
             projects={projects}
@@ -115,21 +142,17 @@ export default function IDE() {
           />
         )}
 
-        {/* Center workspace */}
-        <div style={{
-          flex: 1, minWidth: 0,
-          background: 'var(--bg)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>
-          <div style={{
-            fontFamily: 'var(--font-mono)', fontSize: 10,
-            color: 'var(--text-dim)', letterSpacing: '0.2em',
-          }}>
-            NO TERMINALS
-          </div>
-        </div>
+        <Workspace
+          terminals={terminals}
+          activeTermId={activeTermId}
+          finishedIds={finishedIds}
+          onSelectTerm={setActiveTermId}
+          onCloseTerm={handleCloseTerm}
+          onSpawnTerm={handleSpawnTerm}
+          onAcknowledge={handleAcknowledge}
+          onPromptSubmit={() => {}}
+        />
 
-        {/* Right drawer stub */}
         {!rightCollapsed && (
           <div style={{
             width: rightWidth, flexShrink: 0,
@@ -171,7 +194,6 @@ export default function IDE() {
         )}
       </div>
 
-      {/* 24px status bar */}
       <StatusBar
         branch={activeProject.branch}
         projectName={activeProject.name}
