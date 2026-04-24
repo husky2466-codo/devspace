@@ -62,19 +62,17 @@ export default function IDE() {
   };
 
   const handleSpawnTerm = () => {
-    const t = makeTerminal();
+    const t = makeTerminal(terminals);
     setTerminals((prev) => [...prev, t]);
     setActiveTermId(t.id);
   };
 
   const handleCloseTerm = (id) => {
-    setTerminals((prev) => {
-      const next = prev.filter((t) => t.id !== id);
-      if (id === activeTermId) {
-        setActiveTermId(next.length > 0 ? next[next.length - 1].id : null);
-      }
-      return next;
-    });
+    const next = terminals.filter((t) => t.id !== id);
+    setTerminals(next);
+    if (id === activeTermId) {
+      setActiveTermId(next.length > 0 ? next[next.length - 1].id : null);
+    }
     setFinishedIds((prev) => {
       const n = new Set(prev);
       n.delete(id);

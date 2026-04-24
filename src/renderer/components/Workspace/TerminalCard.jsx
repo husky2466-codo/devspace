@@ -9,7 +9,7 @@ const LINE_COLOR = {
 
 export default function TerminalCard({ term, active, finished, onClick }) {
   const border = finished
-    ? '1px solid rgba(74,222,128,0.8)'
+    ? '1px solid color-mix(in srgb, var(--ok) 80%, transparent)'
     : active
     ? '1px solid var(--pane-ring)'
     : '1px solid var(--border)';
@@ -53,7 +53,7 @@ export default function TerminalCard({ term, active, finished, onClick }) {
         fontSize: 10.5,
       }}>
         <StatusDot
-          kind={finished ? 'ok' : term.status === 'run' ? 'run' : term.status === 'err' ? 'err' : 'ok'}
+          kind={finished ? 'ok' : term.status === 'run' ? 'run' : term.status === 'err' ? 'err' : term.status === 'idle' ? 'idle' : 'ok'}
           pulse={!finished && term.status === 'run'}
           size={5}
         />
@@ -66,7 +66,7 @@ export default function TerminalCard({ term, active, finished, onClick }) {
             fontSize: 8.5,
             letterSpacing: '0.1em',
             color: 'var(--ok)',
-            border: '1px solid rgba(74,222,128,0.4)',
+            border: '1px solid color-mix(in srgb, var(--ok) 40%, transparent)',
             padding: '1px 4px',
             marginRight: 4,
           }}>
@@ -74,15 +74,15 @@ export default function TerminalCard({ term, active, finished, onClick }) {
           </span>
         )}
         <span style={{ color: 'var(--text-dim)' }}>{term.model}</span>
-        <span style={{ color: 'var(--text-dim)', cursor: 'pointer' }}>_</span>
-        <span style={{ color: 'var(--text-dim)', cursor: 'pointer' }}>×</span>
+        <span style={{ color: 'var(--text-dim)' }}>_</span>
+        <span style={{ color: 'var(--text-dim)' }}>×</span>
       </div>
 
       {/* Body */}
       <div style={{
         flex: 1,
         padding: '8px 10px',
-        background: finished ? 'rgba(74,222,128,0.03)' : 'var(--bg)',
+        background: finished ? 'color-mix(in srgb, var(--ok) 3%, var(--bg))' : 'var(--bg)',
         fontFamily: 'var(--font-mono)',
         fontSize: 11.5,
         lineHeight: 1.55,
@@ -106,7 +106,7 @@ export default function TerminalCard({ term, active, finished, onClick }) {
         )}
         {finished && (
           <div style={{
-            color: 'rgba(74,222,128,0.5)',
+            color: 'color-mix(in srgb, var(--ok) 50%, transparent)',
             fontSize: 10,
             marginTop: 4,
             fontFamily: 'var(--font-mono)',

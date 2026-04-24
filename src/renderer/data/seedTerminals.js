@@ -26,12 +26,14 @@ export const SEED_TERMINALS = [
 
 export const SEED_FINISHED_IDS = new Set(['a2']);
 
-let _nextId = 3;
-export function makeTerminal() {
-  const id = `a${_nextId++}`;
+export function makeTerminal(existingTerminals) {
+  const ids = new Set(existingTerminals.map((t) => t.id));
+  let n = existingTerminals.length + 1;
+  while (ids.has(`a${n}`)) n++;
+  const id = `a${n}`;
   return {
     id,
-    name: `agent-${_nextId - 1}`,
+    name: `agent-${n}`,
     model: 'sonnet',
     status: 'idle',
     lines: [{ t: '$ _', kind: 'prompt' }],
