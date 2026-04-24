@@ -5,9 +5,10 @@ import StatusBar from './components/StatusBar.jsx';
 import LeftRail from './components/LeftRail/index.jsx';
 import CollapsedRail from './components/LeftRail/CollapsedRail.jsx';
 import Workspace from './components/Workspace/index.jsx';
-import ResizeHandle from './components/primitives/ResizeHandle.jsx';
+import SpacemanDrawer from './components/SpacemanDrawer/index.jsx';
 import { SEED_PROJECTS } from './data/seedProjects.js';
 import { SEED_TERMINALS, SEED_FINISHED_IDS, makeTerminal } from './data/seedTerminals.js';
+import { SEED_SPACEMAN, makeSpacemanState } from './data/seedSpaceman.js';
 
 function loadLayout() {
   try {
@@ -36,6 +37,10 @@ export default function IDE() {
   const [finishedIds, setFinishedIds]   = useState(SEED_FINISHED_IDS);
 
   const [settingsOpen, setSettingsOpen] = useState(false);
+
+  const [spacemanMode, setSpacemanMode] = useState('project');
+  const [spaceman, setSpaceman]         = useState(SEED_SPACEMAN);
+  const [editorFile, setEditorFile]     = useState(null);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', themeId);
@@ -88,6 +93,35 @@ export default function IDE() {
     });
   };
 
+  const activeSpaceman = spaceman[activeProjectId] ?? makeSpacemanState();
+
+  const handleTabChange = (tab) => {
+    setSpaceman((prev) => ({
+      ...prev,
+      [activeProjectId]: { ...(prev[activeProjectId] ?? makeSpacemanState()), tab },
+    }));
+  };
+
+  const handleFileOpen = (node) => {
+    setEditorFile({
+      name:   node.name,
+      path:   node.path ?? '',
+      git:    node.git,
+      branch: activeProject.branch,
+      dirty:  node.dirty ?? false,
+      errors: node.errors ?? [],
+      ghost:  node.ghost ?? false,
+    });
+    handleTabChange('editor');
+    if (rightWidth < 420) setRightWidth(Math.round(window.innerWidth * 0.52));
+  };
+
+  const handleCloseEditor = () => {
+    setEditorFile(null);
+    handleTabChange('chat');
+    setRightWidth(340);
+  };
+
   const projectTabs = projects.map((p) => ({
     id: p.id,
     name: p.name,
@@ -136,7 +170,7 @@ export default function IDE() {
             projects={projects}
             activeProjectId={activeProjectId}
             onSelectProject={handleSelectProject}
-            onFileOpen={() => {}}
+            onFileOpen={handleFileOpen}
           />
         )}
 
@@ -151,25 +185,21 @@ export default function IDE() {
           onPromptSubmit={() => {}}
         />
 
-        {!rightCollapsed && (
-          <div style={{
-            width: rightWidth, flexShrink: 0,
-            background: 'var(--chrome)',
-            borderLeft: '1px solid var(--border)',
-            position: 'relative',
-          }}>
-            <ResizeHandle side="left" onResize={setRightWidth} min={200} max={900} />
-            <div style={{
-              padding: '10px 12px',
-              fontFamily: 'var(--font-mono)', fontSize: 9,
-              color: 'var(--text-dim)', letterSpacing: '0.14em',
-            }}>
-              SPACEMAN
-            </div>
-          </div>
-        )}
-
-        {rightCollapsed && (
+        {!rightCollapsed ? (
+          <SpacemanDrawer
+            width={rightWidth}
+            onResize={setRightWidth}
+            spaceman={activeSpaceman}
+            onTabChange={handleTabChange}
+            mode={spacemanMode}
+            onModeChange={setSpacemanMode}
+            editorFile={editorFile}
+            onCloseEditor={handleCloseEditor}
+            projectName={activeProject.name}
+            branch={activeProject.branch}
+            onPromptSubmit={() => {}}
+          />
+        ) : (
           <div style={{
             width: 32, flexShrink: 0,
             background: 'var(--chrome)',
