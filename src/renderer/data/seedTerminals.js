@@ -26,6 +26,35 @@ export const SEED_TERMINALS = [
 
 export const SEED_FINISHED_IDS = new Set(['a2']);
 
+export function makeProjectState() {
+  return { terminals: [], activeTermId: null, finishedIds: new Set(), editorFile: null };
+}
+
+export const SEED_BY_PROJECT = {
+  forge: {
+    terminals: SEED_TERMINALS,
+    activeTermId: 'a1',
+    finishedIds: new Set(['a2']),
+    editorFile: null,
+  },
+  archivist: {
+    terminals: [
+      {
+        id: 'b1',
+        name: 'agent-1',
+        model: 'sonnet',
+        status: 'idle',
+        lines: [{ t: '$ _', kind: 'prompt' }],
+      },
+    ],
+    activeTermId: 'b1',
+    finishedIds: new Set(),
+    editorFile: null,
+  },
+  mindcraft: makeProjectState(),
+  routines:  makeProjectState(),
+};
+
 export function makeTerminal(existingTerminals) {
   const ids = new Set(existingTerminals.map((t) => t.id));
   let n = existingTerminals.length + 1;

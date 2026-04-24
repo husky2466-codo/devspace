@@ -7,7 +7,7 @@ import CollapsedRail from './components/LeftRail/CollapsedRail.jsx';
 import Workspace from './components/Workspace/index.jsx';
 import SpacemanDrawer from './components/SpacemanDrawer/index.jsx';
 import { SEED_PROJECTS } from './data/seedProjects.js';
-import { SEED_TERMINALS, SEED_FINISHED_IDS, makeTerminal } from './data/seedTerminals.js';
+import { SEED_BY_PROJECT, makeProjectState, makeTerminal } from './data/seedTerminals.js';
 import { SEED_SPACEMAN, makeSpacemanState } from './data/seedSpaceman.js';
 
 function loadLayout() {
@@ -32,15 +32,14 @@ export default function IDE() {
   const [projects]        = useState(SEED_PROJECTS);
   const [activeProjectId, setActiveProjectId] = useState('forge');
 
-  const [terminals, setTerminals]       = useState(SEED_TERMINALS);
-  const [activeTermId, setActiveTermId] = useState('a1');
-  const [finishedIds, setFinishedIds]   = useState(SEED_FINISHED_IDS);
+  // Per-project workspace state — each slice: { terminals, activeTermId, finishedIds, editorFile }
+  const [byProject, setByProject] = useState(SEED_BY_PROJECT);
 
-  const [settingsOpen, setSettingsOpen] = useState(false);
-
+  // Spaceman state keyed by project id
   const [spacemanMode, setSpacemanMode] = useState('project');
   const [spaceman, setSpaceman]         = useState(SEED_SPACEMAN);
-  const [editorFile, setEditorFile]     = useState(null);
+
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', themeId);
@@ -55,6 +54,18 @@ export default function IDE() {
 
   const activeProject = projects.find((p) => p.id === activeProjectId) ?? projects[0];
 
+  // Active project workspace slice
+  const proj = byProject[activeProjectId] ?? makeProjectState();
+  const { terminals, activeTermId, finishedIds, editorFile } = proj;
+
+  const setProj = (updater) => {
+    setByProject((prev) => {
+      const cur = prev[activeProjectId] ?? makeProjectState();
+      return { ...prev, [activeProjectId]: updater(cur) };
+    });
+  };
+
+  // Project navigation
   const handleSelectProject = (id) => {
     setActiveProjectId(id);
     setRailPage('files');
@@ -66,33 +77,41 @@ export default function IDE() {
     setRailPage('files');
   };
 
+  // Terminal handlers — all mutate only the active project's slice
   const handleSpawnTerm = () => {
     const t = makeTerminal(terminals);
-    setTerminals((prev) => [...prev, t]);
-    setActiveTermId(t.id);
+    setProj((cur) => ({
+      ...cur,
+      terminals: [...cur.terminals, t],
+      activeTermId: t.id,
+    }));
   };
 
   const handleCloseTerm = (id) => {
-    const next = terminals.filter((t) => t.id !== id);
-    setTerminals(next);
-    if (id === activeTermId) {
-      setActiveTermId(next.length > 0 ? next[next.length - 1].id : null);
-    }
-    setFinishedIds((prev) => {
-      const n = new Set(prev);
-      n.delete(id);
-      return n;
+    setProj((cur) => {
+      const next = cur.terminals.filter((t) => t.id !== id);
+      const nextActiveId = id === cur.activeTermId
+        ? (next.length > 0 ? next[next.length - 1].id : null)
+        : cur.activeTermId;
+      const nextFinished = new Set(cur.finishedIds);
+      nextFinished.delete(id);
+      return { ...cur, terminals: next, activeTermId: nextActiveId, finishedIds: nextFinished };
     });
   };
 
   const handleAcknowledge = (id) => {
-    setFinishedIds((prev) => {
-      const n = new Set(prev);
+    setProj((cur) => {
+      const n = new Set(cur.finishedIds);
       n.delete(id);
-      return n;
+      return { ...cur, finishedIds: n };
     });
   };
 
+  const handleSelectTerm = (id) => {
+    setProj((cur) => ({ ...cur, activeTermId: id }));
+  };
+
+  // Spaceman handlers
   const activeSpaceman = spaceman[activeProjectId] ?? makeSpacemanState();
 
   const handleTabChange = (tab) => {
@@ -103,7 +122,7 @@ export default function IDE() {
   };
 
   const handleFileOpen = (node) => {
-    setEditorFile({
+    const file = {
       name:   node.name,
       path:   node.path ?? '',
       git:    node.git,
@@ -111,13 +130,14 @@ export default function IDE() {
       dirty:  node.dirty ?? false,
       errors: node.errors ?? [],
       ghost:  node.ghost ?? false,
-    });
+    };
+    setProj((cur) => ({ ...cur, editorFile: file }));
     handleTabChange('editor');
     if (rightWidth < 420) setRightWidth(Math.round(window.innerWidth * 0.52));
   };
 
   const handleCloseEditor = () => {
-    setEditorFile(null);
+    setProj((cur) => ({ ...cur, editorFile: null }));
     handleTabChange('chat');
     setRightWidth(340);
   };
@@ -186,7 +206,7 @@ export default function IDE() {
           terminals={terminals}
           activeTermId={activeTermId}
           finishedIds={finishedIds}
-          onSelectTerm={setActiveTermId}
+          onSelectTerm={handleSelectTerm}
           onCloseTerm={handleCloseTerm}
           onSpawnTerm={handleSpawnTerm}
           onAcknowledge={handleAcknowledge}
