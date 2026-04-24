@@ -122,6 +122,14 @@ export default function IDE() {
     setRightWidth(340);
   };
 
+  const handleModeChange = (newMode) => {
+    setSpacemanMode(newMode);
+    if (newMode === 'global') {
+      const cur = spaceman[activeProjectId]?.tab;
+      if (cur === 'browser' || cur === 'editor') handleTabChange('chat');
+    }
+  };
+
   const projectTabs = projects.map((p) => ({
     id: p.id,
     name: p.name,
@@ -192,7 +200,7 @@ export default function IDE() {
             spaceman={activeSpaceman}
             onTabChange={handleTabChange}
             mode={spacemanMode}
-            onModeChange={setSpacemanMode}
+            onModeChange={handleModeChange}
             editorFile={editorFile}
             onCloseEditor={handleCloseEditor}
             projectName={activeProject.name}

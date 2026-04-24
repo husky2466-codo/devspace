@@ -93,18 +93,18 @@ function CodeArea({ file, ghost, ghostAccepted, query }) {
             fontSize: 11,
             lineHeight: 1.7,
             background: isRem
-              ? 'rgba(208,88,88,0.07)'
+              ? 'color-mix(in srgb, var(--err) 7%, transparent)'
               : isAccepted
               ? 'var(--accent-soft)'
               : hasErr
-              ? 'rgba(208,88,88,0.05)'
+              ? 'color-mix(in srgb, var(--err) 5%, transparent)'
               : l.active
               ? 'var(--accent-soft)'
               : 'transparent',
             borderLeft: isAccepted || l.active
               ? '2px solid var(--accent)'
               : isRem
-              ? '2px solid rgba(208,88,88,.5)'
+              ? '2px solid color-mix(in srgb, var(--err) 50%, transparent)'
               : '2px solid transparent',
           }}>
             <span style={{
@@ -130,7 +130,7 @@ function CodeArea({ file, ghost, ghostAccepted, query }) {
               {matchIdx >= 0 ? (
                 <>
                   {l.t.slice(0, matchIdx)}
-                  <span style={{ background: 'rgba(201,163,74,0.45)', borderRadius: 2, padding: '0 1px' }}>
+                  <span style={{ background: 'color-mix(in srgb, var(--warn) 45%, transparent)', borderRadius: 2, padding: '0 1px' }}>
                     {l.t.slice(matchIdx, matchIdx + query.length)}
                   </span>
                   {l.t.slice(matchIdx + query.length)}
@@ -192,6 +192,13 @@ export default function EditorTab({ file, onClose }) {
   const [ghost, setGhost] = useState(file?.ghost ?? false);
   const [ghostAccepted, setGhostAccepted] = useState(false);
   const [dirtyGuard, setDirtyGuard] = useState(null);
+
+  useEffect(() => {
+    setPanelOpen(!!(file?.errors?.length));
+    setGhost(file?.ghost ?? false);
+    setGhostAccepted(false);
+    setDirtyGuard(null);
+  }, [file]);
 
   useEffect(() => {
     const onKey = (e) => {

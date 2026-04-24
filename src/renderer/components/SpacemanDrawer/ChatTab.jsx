@@ -25,7 +25,7 @@ export default function ChatTab({ messages, mode }) {
   return (
     <div style={{ flex: 1, overflow: 'auto', padding: 14, fontSize: 12.5, lineHeight: 1.55 }}>
       {messages.map((m, i) => (
-        <div key={i} style={{ marginBottom: 14 }}>
+        <div key={`${m.role}-${m.meta}-${i}`} style={{ marginBottom: 14 }}>
           <div style={{
             fontFamily: 'var(--font-mono)',
             fontSize: 10,

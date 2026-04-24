@@ -21,7 +21,7 @@ export default function MemoryTab({ mems, mode }) {
   return (
     <div style={{ flex: 1, overflow: 'auto', padding: 14 }}>
       {mems.map((m, i) => (
-        <div key={i} style={{ padding: '9px 0', borderBottom: '1px solid var(--border)' }}>
+        <div key={`${m.t}-${i}`} style={{ padding: '9px 0', borderBottom: '1px solid var(--border)' }}>
           <div style={{
             fontFamily: 'var(--font-mono)',
             fontSize: 9.5,
