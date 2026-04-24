@@ -1,14 +1,13 @@
+import { useState } from 'react';
 import SpacemanMark from '../primitives/SpacemanMark.jsx';
 import StatusDot from '../primitives/StatusDot.jsx';
+import PersonaPanel from './PersonaPanel.jsx';
 
-export default function DrawerHeader({ mode, onToggleMode, projectName, branch }) {
+export default function DrawerHeader({ mode, onToggleMode, projectName, branch, onOpenSettings }) {
+  const [personaOpen, setPersonaOpen] = useState(false);
   return (
-    <div style={{
-      flexShrink: 0,
-      padding: '8px 12px',
-      background: 'var(--chrome)',
-      borderBottom: '1px solid var(--border)',
-    }}>
+    <div style={{ flexShrink: 0, background: 'var(--chrome)', borderBottom: '1px solid var(--border)' }}>
+      <div style={{ padding: '8px 12px' }}>
       {/* Row 1: mark + label + toggle + status */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <SpacemanMark size={18} mode={mode} />
@@ -72,6 +71,24 @@ export default function DrawerHeader({ mode, onToggleMode, projectName, branch }
           />
           {mode === 'global' ? 'OBSERVING' : 'WATCHING'}
         </span>
+
+        {/* Persona quick-panel toggle */}
+        <button
+          onClick={() => setPersonaOpen((o) => !o)}
+          title="Persona config"
+          style={{
+            all: 'unset',
+            cursor: 'pointer',
+            marginLeft: 6,
+            color: personaOpen ? 'var(--accent)' : 'var(--text-dim)',
+            fontSize: 13,
+            lineHeight: 1,
+            display: 'flex',
+            alignItems: 'center',
+          }}
+        >
+          ⚙
+        </button>
       </div>
 
       {/* Row 2: context strip */}
@@ -104,6 +121,10 @@ export default function DrawerHeader({ mode, onToggleMode, projectName, branch }
           </>
         )}
       </div>
+      </div>
+      {personaOpen && (
+        <PersonaPanel onOpenSettings={() => { setPersonaOpen(false); onOpenSettings?.(); }} />
+      )}
     </div>
   );
 }

@@ -6,6 +6,7 @@ import LeftRail from './components/LeftRail/index.jsx';
 import CollapsedRail from './components/LeftRail/CollapsedRail.jsx';
 import Workspace from './components/Workspace/index.jsx';
 import SpacemanDrawer from './components/SpacemanDrawer/index.jsx';
+import SettingsModal from './components/SettingsModal.jsx';
 import { SEED_PROJECTS } from './data/seedProjects.js';
 import { SEED_BY_PROJECT, makeProjectState, makeTerminal } from './data/seedTerminals.js';
 import { SEED_SPACEMAN, makeSpacemanState } from './data/seedSpaceman.js';
@@ -226,6 +227,7 @@ export default function IDE() {
             projectName={activeProject.name}
             branch={activeProject.branch}
             onPromptSubmit={() => {}}
+            onOpenSettings={() => setSettingsOpen(true)}
           />
         ) : (
           <div style={{
@@ -254,6 +256,15 @@ export default function IDE() {
         branch={activeProject.branch}
         projectName={activeProject.name}
         modified={activeProject.dirty ? 2 : 0}
+      />
+
+      <SettingsModal
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        activeThemeId={themeId}
+        onThemeChange={setThemeId}
+        projects={projects}
+        activeProjectId={activeProjectId}
       />
 
     </div>

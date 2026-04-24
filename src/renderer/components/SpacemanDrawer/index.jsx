@@ -20,6 +20,7 @@ export default function SpacemanDrawer({
   projectName,
   branch,
   onPromptSubmit,
+  onOpenSettings,
 }) {
   const tab = spaceman?.tab ?? 'chat';
 
@@ -40,6 +41,7 @@ export default function SpacemanDrawer({
         onToggleMode={onModeChange}
         projectName={projectName}
         branch={branch}
+        onOpenSettings={onOpenSettings}
       />
 
       <DrawerTabBar
