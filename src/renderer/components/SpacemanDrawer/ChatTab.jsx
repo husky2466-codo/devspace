@@ -1,4 +1,6 @@
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, useCallback } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { useSpaceman } from '../../hooks/useSpaceman.js';
 
 function KeySetupBanner({ onSave }) {
@@ -69,10 +71,140 @@ function KeySetupBanner({ onSave }) {
   );
 }
 
+// Shared markdown component map — applies inline styles to all rendered elements
+function makeMarkdownComponents() {
+  return {
+    p: ({ children }) => (
+      <p style={{ margin: '0 0 8px', lastChild: 'marginBottom: 0' }}>{children}</p>
+    ),
+    code: ({ inline, children, ...props }) => {
+      if (inline) {
+        return (
+          <code style={{
+            fontFamily: 'var(--font-mono)', fontSize: 11,
+            background: 'color-mix(in srgb, var(--accent) 12%, transparent)',
+            padding: '1px 4px',
+          }} {...props}>{children}</code>
+        );
+      }
+      return (
+        <code style={{
+          fontFamily: 'var(--font-mono)', fontSize: 11,
+          background: 'none', padding: 0,
+        }} {...props}>{children}</code>
+      );
+    },
+    pre: ({ children }) => (
+      <pre style={{
+        background: 'var(--bg-sunken)',
+        border: '1px solid var(--border)',
+        padding: '10px 12px',
+        margin: '8px 0',
+        overflowX: 'auto',
+        fontFamily: 'var(--font-mono)',
+        fontSize: 11,
+      }}>{children}</pre>
+    ),
+    ul: ({ children }) => (
+      <ul style={{ paddingLeft: 20, margin: '4px 0' }}>{children}</ul>
+    ),
+    ol: ({ children }) => (
+      <ol style={{ paddingLeft: 20, margin: '4px 0' }}>{children}</ol>
+    ),
+    li: ({ children }) => (
+      <li style={{ marginBottom: 2 }}>{children}</li>
+    ),
+    h1: ({ children }) => (
+      <h1 style={{ fontSize: 12.5, fontWeight: 600, margin: '0 0 6px' }}>{children}</h1>
+    ),
+    h2: ({ children }) => (
+      <h2 style={{ fontSize: 12.5, fontWeight: 600, margin: '0 0 6px' }}>{children}</h2>
+    ),
+    h3: ({ children }) => (
+      <h3 style={{ fontSize: 12.5, fontWeight: 600, margin: '0 0 6px' }}>{children}</h3>
+    ),
+    strong: ({ children }) => (
+      <strong style={{ fontWeight: 600 }}>{children}</strong>
+    ),
+    a: ({ href, children }) => (
+      <a
+        href={href}
+        style={{ color: 'var(--accent)', textDecoration: 'none' }}
+        onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
+        onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
+      >{children}</a>
+    ),
+    blockquote: ({ children }) => (
+      <blockquote style={{
+        borderLeft: '2px solid var(--border)',
+        paddingLeft: 10,
+        margin: '4px 0',
+        color: 'var(--text-muted)',
+      }}>{children}</blockquote>
+    ),
+    hr: () => (
+      <hr style={{ border: 'none', borderTop: '1px solid var(--border)', margin: '8px 0' }} />
+    ),
+    table: ({ children }) => (
+      <table style={{
+        width: '100%', borderCollapse: 'collapse', fontSize: 11,
+      }}>{children}</table>
+    ),
+    th: ({ children }) => (
+      <th style={{
+        border: '1px solid var(--border)', padding: '4px 8px',
+        textAlign: 'left', background: 'var(--bg-sunken)', fontWeight: 600,
+      }}>{children}</th>
+    ),
+    td: ({ children }) => (
+      <td style={{
+        border: '1px solid var(--border)', padding: '4px 8px', textAlign: 'left',
+      }}>{children}</td>
+    ),
+  };
+}
+
+// Clipboard SVG icon (11x11)
+function IconClipboard() {
+  return (
+    <svg width="11" height="11" viewBox="0 0 11 11" fill="none"
+      stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="2" width="7" height="8" rx="0.5" />
+      <path d="M3 3.5H2a.5.5 0 0 0-.5.5v6a.5.5 0 0 0 .5.5h6a.5.5 0 0 0 .5-.5v-1" />
+    </svg>
+  );
+}
+
+// Checkmark SVG icon (11x11)
+function IconCheck() {
+  return (
+    <svg width="11" height="11" viewBox="0 0 11 11" fill="none"
+      stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="2,6 4.5,8.5 9,3" />
+    </svg>
+  );
+}
+
+const mdComponents = makeMarkdownComponents();
+
 function MessageBubble({ msg, accentColor }) {
   const isUser = msg.role === 'user';
+  const [hovered, setHovered] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = useCallback(() => {
+    navigator.clipboard.writeText(msg.content).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }, [msg.content]);
+
   return (
-    <div style={{ marginBottom: 16 }}>
+    <div
+      style={{ marginBottom: 16, position: 'relative' }}
+      onMouseEnter={() => !isUser && setHovered(true)}
+      onMouseLeave={() => !isUser && setHovered(false)}
+    >
       <div style={{
         fontFamily: 'var(--font-mono)', fontSize: 9.5,
         letterSpacing: '0.1em',
@@ -82,16 +214,53 @@ function MessageBubble({ msg, accentColor }) {
       }}>
         {isUser ? 'you' : 'spaceman · sonnet'}
       </div>
-      <div style={{
-        fontSize: 12.5, lineHeight: 1.6,
-        color: 'var(--text)',
-        whiteSpace: 'pre-wrap',
-        wordBreak: 'break-word',
-        userSelect: 'text',
-        cursor: 'text',
-      }}>
-        {msg.content}
-      </div>
+
+      {isUser ? (
+        <div style={{
+          fontSize: 12.5, lineHeight: 1.6,
+          color: 'var(--text)',
+          whiteSpace: 'pre-wrap',
+          wordBreak: 'break-word',
+          userSelect: 'text',
+          cursor: 'text',
+        }}>
+          {msg.content}
+        </div>
+      ) : (
+        <div style={{
+          fontSize: 12.5, lineHeight: 1.6,
+          color: 'var(--text)',
+          wordBreak: 'break-word',
+          userSelect: 'text',
+          cursor: 'text',
+        }}>
+          <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>
+            {msg.content}
+          </ReactMarkdown>
+        </div>
+      )}
+
+      {/* Copy button — assistant messages only, visible on hover */}
+      {!isUser && hovered && (
+        <button
+          onClick={handleCopy}
+          title={copied ? 'Copied' : 'Copy'}
+          style={{
+            position: 'absolute', top: 0, right: 0,
+            background: 'transparent',
+            border: '1px solid var(--border)',
+            padding: '3px 6px',
+            cursor: 'pointer',
+            color: copied ? 'var(--text)' : 'var(--text-dim)',
+            display: 'flex', alignItems: 'center',
+            lineHeight: 1,
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.color = 'var(--text)'}
+          onMouseLeave={(e) => e.currentTarget.style.color = copied ? 'var(--text)' : 'var(--text-dim)'}
+        >
+          {copied ? <IconCheck /> : <IconClipboard />}
+        </button>
+      )}
     </div>
   );
 }
@@ -108,10 +277,12 @@ function StreamingBubble({ text, accentColor }) {
       </div>
       <div style={{
         fontSize: 12.5, lineHeight: 1.6, color: 'var(--text)',
-        whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+        wordBreak: 'break-word',
         userSelect: 'text', cursor: 'text',
       }}>
-        {text}
+        <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>
+          {text}
+        </ReactMarkdown>
         <span style={{
           display: 'inline-block', width: 7, height: 13,
           background: accentColor, verticalAlign: 'text-bottom',
@@ -122,9 +293,9 @@ function StreamingBubble({ text, accentColor }) {
   );
 }
 
-export default function ChatTab({ mode, projectName, branch, onPromptRef }) {
+export default function ChatTab({ mode, projectId, projectName, branch, onPromptRef }) {
   const { messages, streaming, streamingText, hasKey, error, sendMessage, clearMessages, saveKey } =
-    useSpaceman({ projectName, branch, mode });
+    useSpaceman({ projectId, projectName, branch, mode });
 
   const bottomRef = useRef(null);
   const accentColor = mode === 'global' ? 'var(--accent-global)' : 'var(--accent)';
