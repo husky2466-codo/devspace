@@ -1,6 +1,16 @@
 import StatusDot from './primitives/StatusDot.jsx';
 
-export default function StatusBar({ branch = 'main', projectName = 'dev-space', modified = 0, onComputeClick }) {
+export default function StatusBar({
+  branch = 'main',
+  projectName = '',
+  modified = 0,
+  onComputeClick,
+  cursorLine = 1,
+  cursorCol = 1,
+  language = '',
+}) {
+  const hasProject = !!projectName;
+
   return (
     <div style={{
       height: 24, flexShrink: 0,
@@ -12,15 +22,21 @@ export default function StatusBar({ branch = 'main', projectName = 'dev-space', 
       color: 'var(--text-muted)',
       letterSpacing: '0.04em',
     }}>
-      <StatusDot kind="ok" size={5} />
-      <span>{branch}</span>
-      <span style={{ color: 'var(--text-dim)' }}>·</span>
-      <span>{projectName}</span>
-      {modified > 0 && (
+      {hasProject ? (
         <>
+          <StatusDot kind="ok" size={5} />
+          <span>{branch}</span>
           <span style={{ color: 'var(--text-dim)' }}>·</span>
-          <span style={{ color: 'var(--warn)' }}>{modified} modified</span>
+          <span>{projectName}</span>
+          {modified > 0 && (
+            <>
+              <span style={{ color: 'var(--text-dim)' }}>·</span>
+              <span style={{ color: 'var(--warn)' }}>{modified} modified</span>
+            </>
+          )}
         </>
+      ) : (
+        <span style={{ color: 'var(--text-dim)' }}>— no project open —</span>
       )}
       <div style={{ flex: 1 }} />
       <button
@@ -34,10 +50,16 @@ export default function StatusBar({ branch = 'main', projectName = 'dev-space', 
           letterSpacing: '0.04em',
         }}
       >
-        DGX
+        COMPUTE
       </button>
       <span style={{ color: 'var(--text-dim)' }}>·</span>
-      <span>ln 1, col 1</span>
+      {language && (
+        <>
+          <span>{language}</span>
+          <span style={{ color: 'var(--text-dim)' }}>·</span>
+        </>
+      )}
+      <span>ln {cursorLine}, col {cursorCol}</span>
       <span style={{ color: 'var(--text-dim)' }}>·</span>
       <span>utf-8</span>
     </div>
