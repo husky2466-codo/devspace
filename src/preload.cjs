@@ -2,8 +2,9 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('electronAPI', {
   platform: process.platform,
-  browseFolder: (defaultPath) => ipcRenderer.invoke('dialog:browse-folder', defaultPath),
-  browseFile:   (opts)        => ipcRenderer.invoke('dialog:browse-file', opts),
+  browseFolder:    (defaultPath) => ipcRenderer.invoke('dialog:browse-folder', defaultPath),
+  browseFile:      (opts)        => ipcRenderer.invoke('dialog:browse-file', opts),
+  inspectFolder:   (folderPath)  => ipcRenderer.invoke('project:inspect-folder', folderPath),
 });
 
 contextBridge.exposeInMainWorld('spaceman', {

@@ -65,11 +65,16 @@ function Field({ label, value, onChange, placeholder, type = 'text', multiline }
   );
 }
 
-function PathField({ label, value, onChange, placeholder }) {
+function PathField({ label, value, onChange, placeholder, onInspect }) {
   const handleBrowse = async () => {
     const defaultPath = value || getDefaultFolder() || undefined;
     const picked = await window.electronAPI?.browseFolder(defaultPath);
-    if (picked) onChange(picked);
+    if (!picked) return;
+    onChange(picked);
+    if (onInspect) {
+      const info = await window.electronAPI?.inspectFolder(picked);
+      if (info) onInspect(info);
+    }
   };
 
   return (
@@ -130,10 +135,14 @@ function PathField({ label, value, onChange, placeholder }) {
 }
 
 function LocalForm({ fields, onChange }) {
+  const handleInspect = (info) => {
+    if (!fields.name) onChange('name', info.name);
+    if (!fields.branch && info.branch) onChange('branch', info.branch);
+  };
   return (
     <>
       <Field     label="Project name"  value={fields.name}   onChange={(v) => onChange('name', v)}   placeholder="my-project" />
-      <PathField label="Local path"    value={fields.path}   onChange={(v) => onChange('path', v)}   placeholder="/Users/you/Projects/my-project" />
+      <PathField label="Local path"    value={fields.path}   onChange={(v) => onChange('path', v)}   placeholder="/Users/you/Projects/my-project" onInspect={handleInspect} />
       <Field     label="Branch"        value={fields.branch} onChange={(v) => onChange('branch', v)} placeholder="main" />
       <Field     label="Description"   value={fields.desc}   onChange={(v) => onChange('desc', v)}   placeholder="What is this project?" multiline />
     </>
@@ -141,34 +150,48 @@ function LocalForm({ fields, onChange }) {
 }
 
 function RemoteForm({ fields, onChange }) {
+  const handleInspect = (info) => {
+    if (!fields.name) onChange('name', info.name);
+    if (!fields.branch && info.branch) onChange('branch', info.branch);
+  };
   return (
     <>
       <Field     label="Project name"  value={fields.name}   onChange={(v) => onChange('name', v)}   placeholder="my-project" />
       <Field     label="SSH host"      value={fields.host}   onChange={(v) => onChange('host', v)}   placeholder="user@host or alias from ~/.ssh/config" />
-      <PathField label="Remote path"   value={fields.path}   onChange={(v) => onChange('path', v)}   placeholder="/home/user/projects/my-project" />
+      <PathField label="Remote path"   value={fields.path}   onChange={(v) => onChange('path', v)}   placeholder="/home/user/projects/my-project" onInspect={handleInspect} />
       <Field     label="Branch"        value={fields.branch} onChange={(v) => onChange('branch', v)} placeholder="main" />
     </>
   );
 }
 
 function CloneLocalForm({ fields, onChange }) {
+  const handleInspect = (info) => {
+    if (!fields.name) onChange('name', info.name);
+    if (!fields.branch && info.branch) onChange('branch', info.branch);
+    if (!fields.url && info.remoteUrl) onChange('url', info.remoteUrl);
+  };
   return (
     <>
       <Field     label="Project name"  value={fields.name}   onChange={(v) => onChange('name', v)}   placeholder="my-project" />
       <Field     label="Git URL"       value={fields.url}    onChange={(v) => onChange('url', v)}    placeholder="git@github.com:org/repo.git" />
-      <PathField label="Clone into"    value={fields.path}   onChange={(v) => onChange('path', v)}   placeholder="/Users/you/Projects" />
+      <PathField label="Clone into"    value={fields.path}   onChange={(v) => onChange('path', v)}   placeholder="/Users/you/Projects" onInspect={handleInspect} />
       <Field     label="Branch"        value={fields.branch} onChange={(v) => onChange('branch', v)} placeholder="main (default)" />
     </>
   );
 }
 
 function CloneRemoteForm({ fields, onChange }) {
+  const handleInspect = (info) => {
+    if (!fields.name) onChange('name', info.name);
+    if (!fields.branch && info.branch) onChange('branch', info.branch);
+    if (!fields.url && info.remoteUrl) onChange('url', info.remoteUrl);
+  };
   return (
     <>
       <Field     label="Project name"  value={fields.name}   onChange={(v) => onChange('name', v)}   placeholder="my-project" />
       <Field     label="SSH host"      value={fields.host}   onChange={(v) => onChange('host', v)}   placeholder="user@host or alias from ~/.ssh/config" />
       <Field     label="Git URL"       value={fields.url}    onChange={(v) => onChange('url', v)}    placeholder="git@github.com:org/repo.git" />
-      <PathField label="Remote path"   value={fields.path}   onChange={(v) => onChange('path', v)}   placeholder="/home/user/projects" />
+      <PathField label="Remote path"   value={fields.path}   onChange={(v) => onChange('path', v)}   placeholder="/home/user/projects" onInspect={handleInspect} />
       <Field     label="Branch"        value={fields.branch} onChange={(v) => onChange('branch', v)} placeholder="main (default)" />
     </>
   );

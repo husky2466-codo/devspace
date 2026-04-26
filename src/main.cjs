@@ -1,5 +1,6 @@
 const { app, BrowserWindow, Menu, ipcMain, dialog } = require('electron');
 const path = require('path');
+const { execFile } = require('child_process');
 
 const isDev = process.env.NODE_ENV !== 'production';
 
@@ -59,6 +60,35 @@ ipcMain.handle('dialog:browse-file', async (_event, { defaultPath, filters } = {
   });
   if (result.canceled || result.filePaths.length === 0) return null;
   return result.filePaths[0];
+});
+
+// ── Project inspection ───────────────────────────────────────────────────────
+
+function git(cwd, args) {
+  return new Promise((resolve) => {
+    execFile('git', args, { cwd }, (err, stdout) => {
+      resolve(err ? null : stdout.trim());
+    });
+  });
+}
+
+ipcMain.handle('project:inspect-folder', async (_event, folderPath) => {
+  const name = path.basename(folderPath);
+
+  const [branch, remoteUrl, topLevel] = await Promise.all([
+    git(folderPath, ['rev-parse', '--abbrev-ref', 'HEAD']),
+    git(folderPath, ['remote', 'get-url', 'origin']),
+    git(folderPath, ['rev-parse', '--show-toplevel']),
+  ]);
+
+  const isGit = topLevel !== null;
+
+  return {
+    name,
+    branch: branch || '',
+    remoteUrl: remoteUrl || '',
+    isGit,
+  };
 });
 
 // ── IPC handlers ──────────────────────────────────────────────────────────────
