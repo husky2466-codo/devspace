@@ -1,6 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
-function Field({ label, value, onChange, placeholder, type = 'text', multiline }) {
+function getDefaultFolder() {
+  try {
+    return localStorage.getItem('ds.v3.defaultProjectsFolder') || '';
+  } catch {
+    return '';
+  }
+}
+
+// ── Shared field components ───────────────────────────────────────────────────
+
+function Field({ label, value, onChange, placeholder, type = 'text', multiline, readOnly }) {
   return (
     <div style={{
       display: 'grid',
@@ -23,12 +33,13 @@ function Field({ label, value, onChange, placeholder, type = 'text', multiline }
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
+          readOnly={readOnly}
           rows={2}
           style={{
             all: 'unset',
             fontFamily: 'var(--font-mono)',
             fontSize: 11,
-            color: 'var(--text)',
+            color: readOnly ? 'var(--text-muted)' : 'var(--text)',
             background: 'var(--bg-sunken)',
             border: '1px solid var(--border)',
             padding: '5px 8px',
@@ -42,13 +53,14 @@ function Field({ label, value, onChange, placeholder, type = 'text', multiline }
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
+          readOnly={readOnly}
           style={{
             all: 'unset',
             fontFamily: 'var(--font-mono)',
             fontSize: 11,
-            color: 'var(--text)',
-            background: 'var(--bg-sunken)',
-            border: '1px solid var(--border)',
+            color: readOnly ? 'var(--text-muted)' : 'var(--text)',
+            background: readOnly ? 'transparent' : 'var(--bg-sunken)',
+            border: readOnly ? 'none' : '1px solid var(--border)',
             padding: '5px 8px',
           }}
         />
@@ -57,24 +69,164 @@ function Field({ label, value, onChange, placeholder, type = 'text', multiline }
   );
 }
 
-function LocalForm({ fields, onChange }) {
+function PathField({ label, value, onChange, placeholder, onInspect }) {
+  const handleBrowse = async () => {
+    const defaultPath = value || getDefaultFolder() || undefined;
+    const picked = await window.electronAPI?.browseFolder(defaultPath);
+    if (!picked) return;
+    onChange(picked);
+    if (onInspect) {
+      const info = await window.electronAPI?.inspectFolder(picked);
+      if (info) onInspect(info);
+    }
+  };
+
+  return (
+    <div style={{
+      display: 'grid',
+      gridTemplateColumns: '140px 1fr',
+      gap: 12,
+      padding: '9px 0',
+      borderBottom: '1px solid var(--border)',
+      alignItems: 'center',
+    }}>
+      <span style={{
+        fontFamily: 'var(--font-mono)',
+        fontSize: 11,
+        color: 'var(--text-dim)',
+      }}>
+        {label}
+      </span>
+      <div style={{ display: 'flex', gap: 6 }}>
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          style={{
+            all: 'unset',
+            flex: 1,
+            fontFamily: 'var(--font-mono)',
+            fontSize: 11,
+            color: 'var(--text)',
+            background: 'var(--bg-sunken)',
+            border: '1px solid var(--border)',
+            padding: '5px 8px',
+          }}
+        />
+        <button
+          type="button"
+          onClick={handleBrowse}
+          style={{
+            all: 'unset',
+            cursor: 'pointer',
+            fontFamily: 'var(--font-mono)',
+            fontSize: 10,
+            padding: '5px 10px',
+            border: '1px solid var(--border)',
+            color: 'var(--text-muted)',
+            background: 'var(--chrome)',
+            letterSpacing: '0.06em',
+            flexShrink: 0,
+            whiteSpace: 'nowrap',
+          }}
+        >
+          BROWSE
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── Detected info badge ───────────────────────────────────────────────────────
+
+function DetectedBadge({ isGit, branch, remoteUrl }) {
+  if (!isGit) return null;
+  return (
+    <div style={{
+      margin: '10px 0 2px',
+      padding: '8px 10px',
+      background: 'color-mix(in srgb, var(--ok) 8%, transparent)',
+      border: '1px solid color-mix(in srgb, var(--ok) 25%, transparent)',
+      borderLeft: '2px solid var(--ok)',
+      fontFamily: 'var(--font-mono)',
+      fontSize: 10,
+      color: 'var(--text-muted)',
+      lineHeight: 1.7,
+    }}>
+      <span style={{ color: 'var(--ok)', marginRight: 6 }}>git</span>
+      {branch && <span>branch: <span style={{ color: 'var(--text)' }}>{branch}</span></span>}
+      {branch && remoteUrl && <span style={{ margin: '0 8px', color: 'var(--border)' }}>·</span>}
+      {remoteUrl && <span>origin: <span style={{ color: 'var(--text)' }}>{remoteUrl}</span></span>}
+    </div>
+  );
+}
+
+// ── Import forms (existing repos) ─────────────────────────────────────────────
+
+function ImportLocalForm({ fields, onChange, detected, onInspect }) {
   return (
     <>
-      <Field label="Project name"  value={fields.name}   onChange={(v) => onChange('name', v)}   placeholder="my-project" />
-      <Field label="Local path"    value={fields.path}   onChange={(v) => onChange('path', v)}   placeholder="/Users/you/Projects/my-project" />
-      <Field label="Branch"        value={fields.branch} onChange={(v) => onChange('branch', v)} placeholder="main" />
-      <Field label="Description"   value={fields.desc}   onChange={(v) => onChange('desc', v)}   placeholder="What is this project?" multiline />
+      <PathField
+        label="Folder path"
+        value={fields.path}
+        onChange={(v) => onChange('path', v)}
+        placeholder="/Users/you/Projects/my-project"
+        onInspect={onInspect}
+      />
+      <DetectedBadge isGit={detected.isGit} branch={detected.branch} remoteUrl={detected.remoteUrl} />
+      <Field
+        label="Display name"
+        value={fields.name}
+        onChange={(v) => onChange('name', v)}
+        placeholder="my-project"
+      />
     </>
   );
 }
 
-function RemoteForm({ fields, onChange }) {
+function ImportRemoteForm({ fields, onChange, detected, onInspect }) {
   return (
     <>
-      <Field label="Project name"  value={fields.name}   onChange={(v) => onChange('name', v)}   placeholder="my-project" />
-      <Field label="SSH host"      value={fields.host}   onChange={(v) => onChange('host', v)}   placeholder="user@host or alias from ~/.ssh/config" />
-      <Field label="Remote path"   value={fields.path}   onChange={(v) => onChange('path', v)}   placeholder="/home/user/projects/my-project" />
-      <Field label="Branch"        value={fields.branch} onChange={(v) => onChange('branch', v)} placeholder="main" />
+      <Field label="SSH host" value={fields.host} onChange={(v) => onChange('host', v)} placeholder="user@host or alias from ~/.ssh/config" />
+      <PathField
+        label="Remote path"
+        value={fields.path}
+        onChange={(v) => onChange('path', v)}
+        placeholder="/home/user/projects/my-project"
+        onInspect={onInspect}
+      />
+      <DetectedBadge isGit={detected.isGit} branch={detected.branch} remoteUrl={detected.remoteUrl} />
+      <Field
+        label="Display name"
+        value={fields.name}
+        onChange={(v) => onChange('name', v)}
+        placeholder="my-project"
+      />
+    </>
+  );
+}
+
+// ── Create forms (new projects) ───────────────────────────────────────────────
+
+function CreateLocalForm({ fields, onChange }) {
+  return (
+    <>
+      <Field     label="Project name"  value={fields.name}   onChange={(v) => onChange('name', v)}   placeholder="my-project" />
+      <PathField label="Local path"    value={fields.path}   onChange={(v) => onChange('path', v)}   placeholder="/Users/you/Projects/my-project" />
+      <Field     label="Branch"        value={fields.branch} onChange={(v) => onChange('branch', v)} placeholder="main" />
+      <Field     label="Description"   value={fields.desc}   onChange={(v) => onChange('desc', v)}   placeholder="What is this project?" multiline />
+    </>
+  );
+}
+
+function CreateRemoteForm({ fields, onChange }) {
+  return (
+    <>
+      <Field     label="Project name"  value={fields.name}   onChange={(v) => onChange('name', v)}   placeholder="my-project" />
+      <Field     label="SSH host"      value={fields.host}   onChange={(v) => onChange('host', v)}   placeholder="user@host or alias from ~/.ssh/config" />
+      <PathField label="Remote path"   value={fields.path}   onChange={(v) => onChange('path', v)}   placeholder="/home/user/projects/my-project" />
+      <Field     label="Branch"        value={fields.branch} onChange={(v) => onChange('branch', v)} placeholder="main" />
     </>
   );
 }
@@ -82,10 +234,10 @@ function RemoteForm({ fields, onChange }) {
 function CloneLocalForm({ fields, onChange }) {
   return (
     <>
-      <Field label="Project name"  value={fields.name}   onChange={(v) => onChange('name', v)}   placeholder="my-project" />
-      <Field label="Git URL"       value={fields.url}    onChange={(v) => onChange('url', v)}    placeholder="git@github.com:org/repo.git" />
-      <Field label="Clone into"    value={fields.path}   onChange={(v) => onChange('path', v)}   placeholder="/Users/you/Projects" />
-      <Field label="Branch"        value={fields.branch} onChange={(v) => onChange('branch', v)} placeholder="main (default)" />
+      <Field     label="Project name"  value={fields.name}   onChange={(v) => onChange('name', v)}   placeholder="my-project" />
+      <Field     label="Git URL"       value={fields.url}    onChange={(v) => onChange('url', v)}    placeholder="git@github.com:org/repo.git" />
+      <PathField label="Clone into"    value={fields.path}   onChange={(v) => onChange('path', v)}   placeholder="/Users/you/Projects" />
+      <Field     label="Branch"        value={fields.branch} onChange={(v) => onChange('branch', v)} placeholder="main (default)" />
     </>
   );
 }
@@ -93,53 +245,88 @@ function CloneLocalForm({ fields, onChange }) {
 function CloneRemoteForm({ fields, onChange }) {
   return (
     <>
-      <Field label="Project name"  value={fields.name}   onChange={(v) => onChange('name', v)}   placeholder="my-project" />
-      <Field label="SSH host"      value={fields.host}   onChange={(v) => onChange('host', v)}   placeholder="user@host or alias from ~/.ssh/config" />
-      <Field label="Git URL"       value={fields.url}    onChange={(v) => onChange('url', v)}    placeholder="git@github.com:org/repo.git" />
-      <Field label="Remote path"   value={fields.path}   onChange={(v) => onChange('path', v)}   placeholder="/home/user/projects" />
-      <Field label="Branch"        value={fields.branch} onChange={(v) => onChange('branch', v)} placeholder="main (default)" />
+      <Field     label="Project name"  value={fields.name}   onChange={(v) => onChange('name', v)}   placeholder="my-project" />
+      <Field     label="SSH host"      value={fields.host}   onChange={(v) => onChange('host', v)}   placeholder="user@host or alias from ~/.ssh/config" />
+      <Field     label="Git URL"       value={fields.url}    onChange={(v) => onChange('url', v)}    placeholder="git@github.com:org/repo.git" />
+      <PathField label="Remote path"   value={fields.path}   onChange={(v) => onChange('path', v)}   placeholder="/home/user/projects" />
+      <Field     label="Branch"        value={fields.branch} onChange={(v) => onChange('branch', v)} placeholder="main (default)" />
     </>
   );
 }
 
-const VARIANT_LABELS = {
-  'local':        'Local',
-  'remote':       'Remote',
-  'clone-local':  'Clone → Local',
-  'clone-remote': 'Clone → Remote',
+// ── Variant metadata ──────────────────────────────────────────────────────────
+
+const VARIANT_META = {
+  'import-local':  { label: 'Import · Local',          action: 'IMPORT PROJECT', isImport: true },
+  'import-remote': { label: 'Import · Remote',         action: 'IMPORT PROJECT', isImport: true },
+  'create-local':  { label: 'Create · Local',          action: 'CREATE PROJECT', isImport: false },
+  'create-remote': { label: 'Create · Remote',         action: 'CREATE PROJECT', isImport: false },
+  'clone-local':   { label: 'Create · Clone → Local',  action: 'CREATE PROJECT', isImport: false },
+  'clone-remote':  { label: 'Create · Clone → Remote', action: 'CREATE PROJECT', isImport: false },
+  // legacy ids (from old picker) — map to create variants
+  'local':         { label: 'Create · Local',          action: 'CREATE PROJECT', isImport: false },
+  'remote':        { label: 'Create · Remote',         action: 'CREATE PROJECT', isImport: false },
 };
 
-const EMPTY_FIELDS = { name: '', path: '', branch: '', desc: '', host: '', url: '' };
+const EMPTY_FIELDS = { name: '', path: '', branch: '', desc: '', host: '', url: '', remoteUrl: '' };
+
+// ── Main component ────────────────────────────────────────────────────────────
 
 export default function NewProjectForm({ variant, onCancel, onCreate }) {
   const [fields, setFields] = useState(EMPTY_FIELDS);
+  const [detected, setDetected] = useState({ isGit: false, branch: '', remoteUrl: '' });
   const [dirty, setDirty] = useState(false);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
 
-  const setField = (key, val) => {
+  const meta = VARIANT_META[variant] ?? { label: variant, action: 'CREATE PROJECT', isImport: false };
+
+  const onChange = (key, val) => {
     setFields((f) => ({ ...f, [key]: val }));
+    if (key === 'branch' || key === 'remoteUrl') {
+      setDetected((d) => ({ ...d, [key]: val, isGit: true }));
+    }
     setDirty(true);
   };
+
+  // Called by import forms after inspectFolder returns
+  const onInspectResult = (info) => {
+    setDetected({ isGit: info.isGit, branch: info.branch, remoteUrl: info.remoteUrl });
+    setFields((f) => ({
+      ...f,
+      name:      f.name      || info.name,
+      branch:    f.branch    || info.branch,
+      remoteUrl: f.remoteUrl || info.remoteUrl,
+    }));
+    setDirty(true);
+  };
+
+  // Proxy onChange that also triggers inspect result for import forms
+  const handleFieldChange = (key, val) => onChange(key, val);
 
   const handleCancel = () => {
     if (dirty) { setConfirmDiscard(true); return; }
     onCancel();
   };
 
-  const canCreate = fields.name.trim().length > 0 && fields.path.trim().length > 0;
+  const isImport = meta.isImport;
+  const canSubmit = isImport
+    ? fields.path.trim().length > 0
+    : fields.name.trim().length > 0 && fields.path.trim().length > 0;
 
-  const handleCreate = () => {
-    if (!canCreate) return;
+  const handleSubmit = () => {
+    if (!canSubmit) return;
+    const name = fields.name.trim() || detected.branch || fields.path.split('/').filter(Boolean).pop() || 'project';
     onCreate({
-      id: fields.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
-      name: fields.name.trim(),
-      branch: fields.branch.trim() || 'main',
+      id: name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
+      name,
+      branch: fields.branch.trim() || detected.branch || 'main',
       last: 'just now',
       activity: 'idle',
       dirty: false,
       files: [],
       _variant: variant,
       _fields: { ...fields },
+      _detected: { ...detected },
     });
   };
 
@@ -164,7 +351,7 @@ export default function NewProjectForm({ variant, onCancel, onCreate }) {
           letterSpacing: '0.06em',
           flexShrink: 0,
         }}>
-          Unsaved changes — click CANCEL to discard or CREATE PROJECT to save.
+          Unsaved changes — click CANCEL to discard or {meta.action} to save.
         </div>
       )}
 
@@ -181,19 +368,21 @@ export default function NewProjectForm({ variant, onCancel, onCreate }) {
           letterSpacing: '0.14em',
           marginBottom: 6,
         }}>
-          NEW PROJECT · {VARIANT_LABELS[variant] ?? variant.toUpperCase()}
+          {meta.label.toUpperCase()}
         </div>
         <div style={{ fontSize: 18, color: 'var(--text)', fontWeight: 500 }}>
-          {fields.name.trim() || 'Untitled Project'}
+          {fields.name.trim() || (isImport ? 'Select a folder' : 'Untitled Project')}
         </div>
       </div>
 
       {/* Fields */}
       <div style={{ flex: 1, overflow: 'auto', padding: '4px 24px 24px' }}>
-        {variant === 'local'        && <LocalForm       fields={fields} onChange={setField} />}
-        {variant === 'remote'       && <RemoteForm      fields={fields} onChange={setField} />}
-        {variant === 'clone-local'  && <CloneLocalForm  fields={fields} onChange={setField} />}
-        {variant === 'clone-remote' && <CloneRemoteForm fields={fields} onChange={setField} />}
+        {variant === 'import-local'  && <ImportLocalForm  fields={fields} onChange={handleFieldChange} detected={detected} onInspect={onInspectResult} />}
+        {variant === 'import-remote' && <ImportRemoteForm fields={fields} onChange={handleFieldChange} detected={detected} onInspect={onInspectResult} />}
+        {(variant === 'create-local'  || variant === 'local')   && <CreateLocalForm  fields={fields} onChange={handleFieldChange} />}
+        {(variant === 'create-remote' || variant === 'remote')  && <CreateRemoteForm fields={fields} onChange={handleFieldChange} />}
+        {variant === 'clone-local'   && <CloneLocalForm   fields={fields} onChange={handleFieldChange} />}
+        {variant === 'clone-remote'  && <CloneRemoteForm  fields={fields} onChange={handleFieldChange} />}
       </div>
 
       {/* Action row */}
@@ -207,20 +396,20 @@ export default function NewProjectForm({ variant, onCancel, onCreate }) {
         background: 'var(--chrome)',
       }}>
         <button
-          onClick={handleCreate}
-          disabled={!canCreate}
+          onClick={handleSubmit}
+          disabled={!canSubmit}
           style={{
             all: 'unset',
-            cursor: canCreate ? 'pointer' : 'not-allowed',
+            cursor: canSubmit ? 'pointer' : 'not-allowed',
             fontFamily: 'var(--font-mono)',
             fontSize: 11,
             padding: '6px 16px',
-            background: canCreate ? 'var(--accent)' : 'var(--bg-sunken)',
-            color: canCreate ? 'var(--bg)' : 'var(--text-dim)',
+            background: canSubmit ? 'var(--accent)' : 'var(--bg-sunken)',
+            color: canSubmit ? 'var(--bg)' : 'var(--text-dim)',
             letterSpacing: '0.08em',
           }}
         >
-          CREATE PROJECT
+          {meta.action}
         </button>
         <button
           onClick={handleCancel}
@@ -237,9 +426,9 @@ export default function NewProjectForm({ variant, onCancel, onCreate }) {
         >
           CANCEL
         </button>
-        {!canCreate && fields.name.trim().length === 0 && (
+        {!canSubmit && (
           <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-dim)' }}>
-            Name and path required
+            {isImport ? 'Select a folder to continue' : 'Name and path required'}
           </span>
         )}
       </div>

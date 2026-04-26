@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import NativeTitleBar from './components/NativeTitleBar.jsx';
 import TopBar from './components/TopBar.jsx';
 import StatusBar from './components/StatusBar.jsx';
@@ -6,6 +6,7 @@ import LeftRail from './components/LeftRail/index.jsx';
 import CollapsedRail from './components/LeftRail/CollapsedRail.jsx';
 import Workspace from './components/Workspace/index.jsx';
 import SpacemanDrawer from './components/SpacemanDrawer/index.jsx';
+import PromptStrip from './components/SpacemanDrawer/PromptStrip.jsx';
 import SettingsModal from './components/SettingsModal.jsx';
 import ComputePopover from './components/ComputePopover.jsx';
 import NewProjectPicker from './components/NewProjectPicker.jsx';
@@ -34,7 +35,7 @@ export default function IDE() {
   const [railPage, setRailPage]             = useState(() => loadLayout().railPage ?? 'projects');
 
   const [projects, setProjects]   = useState(SEED_PROJECTS);
-  const [activeProjectId, setActiveProjectId] = useState('forge');
+  const [activeProjectId, setActiveProjectId] = useState(null);
 
   // New-project flow
   const [pickerOpen, setPickerOpen]       = useState(false);
@@ -51,6 +52,10 @@ export default function IDE() {
   const [settingsSection, setSettingsSection] = useState('appearance');
   const [computeOpen, setComputeOpen]       = useState(false);
 
+  // Global prompt strip — ChatTab registers its sendMessage here
+  const promptActionRef = useRef(null);
+  const handlePromptSubmit = (text) => promptActionRef.current?.(text);
+
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', themeId);
     localStorage.setItem('ds.v3.tone', themeId);
@@ -62,11 +67,43 @@ export default function IDE() {
     }));
   }, [leftCollapsed, rightCollapsed, leftWidth, rightWidth, railPage]);
 
-  const activeProject = projects.find((p) => p.id === activeProjectId) ?? projects[0];
+  // File tree: read + watch when active project changes
+  useEffect(() => {
+    if (!activeProjectId) return;
+    const project = projects.find((p) => p.id === activeProjectId);
+    const rootPath = project?._fields?.path;
+    if (!rootPath) return;
+
+    window.electronAPI?.readTree(rootPath).then((tree) => {
+      setByProject((prev) => {
+        const cur = prev[activeProjectId] ?? makeProjectState();
+        return { ...prev, [activeProjectId]: { ...cur, files: tree } };
+      });
+    });
+
+    window.electronAPI?.watchProject(activeProjectId, rootPath);
+
+    return () => {
+      window.electronAPI?.unwatchProject(activeProjectId);
+    };
+  }, [activeProjectId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Listen for live tree updates from chokidar
+  useEffect(() => {
+    const cleanup = window.electronAPI?.onTreeUpdate(({ projectId, tree }) => {
+      setByProject((prev) => {
+        const cur = prev[projectId] ?? makeProjectState();
+        return { ...prev, [projectId]: { ...cur, files: tree } };
+      });
+    });
+    return () => cleanup?.();
+  }, []);
+
+  const activeProject = projects.find((p) => p.id === activeProjectId) ?? null;
 
   // Active project workspace slice
   const proj = byProject[activeProjectId] ?? makeProjectState();
-  const { terminals, activeTermId, finishedIds, editorFile } = proj;
+  const { terminals, activeTermId, finishedIds, editorFile, files } = proj;
 
   const setProj = (updater) => {
     setByProject((prev) => {
@@ -136,7 +173,7 @@ export default function IDE() {
       name:   node.name,
       path:   node.path ?? '',
       git:    node.git,
-      branch: activeProject.branch,
+      branch: activeProject?.branch ?? '',
       dirty:  node.dirty ?? false,
       errors: node.errors ?? [],
       ghost:  node.ghost ?? false,
@@ -189,10 +226,10 @@ export default function IDE() {
     <div style={{ width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
       <NativeTitleBar
-        projectName={activeProject.name}
-        branch={activeProject.branch}
-        dirty={activeProject.dirty}
-        modified={activeProject.dirty ? 2 : 0}
+        projectName={activeProject?.name ?? 'Dev-Space.ai'}
+        branch={activeProject?.branch ?? ''}
+        dirty={activeProject?.dirty ?? false}
+        modified={activeProject?.dirty ? 2 : 0}
       />
 
       <TopBar
@@ -225,6 +262,7 @@ export default function IDE() {
             onPageChange={setRailPage}
             projects={projects}
             activeProjectId={activeProjectId}
+            activeFiles={files ?? []}
             onSelectProject={handleSelectProject}
             onFileOpen={handleFileOpen}
             pickerOpen={pickerOpen}
@@ -240,6 +278,22 @@ export default function IDE() {
             onCancel={handleCancelNewProject}
             onCreate={handleCreateProject}
           />
+        ) : projects.length === 0 ? (
+          <div style={{
+            flex: 1, display: 'flex', flexDirection: 'column',
+            alignItems: 'center', justifyContent: 'center', gap: 16,
+            background: 'var(--bg)',
+          }}>
+            <div style={{
+              fontFamily: 'var(--font-mono)', fontSize: 10,
+              color: 'var(--text-dim)', letterSpacing: '0.14em',
+            }}>
+              NO PROJECTS
+            </div>
+            <div style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6, textAlign: 'center' }}>
+              Click <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--text)' }}>+ NEW</span> in the left rail<br />to add your first project.
+            </div>
+          </div>
         ) : (
           <Workspace
             terminals={terminals}
@@ -249,7 +303,6 @@ export default function IDE() {
             onCloseTerm={handleCloseTerm}
             onSpawnTerm={handleSpawnTerm}
             onAcknowledge={handleAcknowledge}
-            onPromptSubmit={() => {}}
           />
         )}
 
@@ -263,10 +316,10 @@ export default function IDE() {
             onModeChange={handleModeChange}
             editorFile={editorFile}
             onCloseEditor={handleCloseEditor}
-            projectName={activeProject.name}
-            branch={activeProject.branch}
-            onPromptSubmit={() => {}}
+            projectName={activeProject?.name ?? ''}
+            branch={activeProject?.branch ?? ''}
             onOpenSettings={() => setSettingsOpen(true)}
+            promptActionRef={promptActionRef}
           />
         ) : (
           <div style={{
@@ -291,11 +344,17 @@ export default function IDE() {
         )}
       </div>
 
+      <PromptStrip
+        mode={spacemanMode}
+        activeTab={activeSpaceman?.tab ?? 'chat'}
+        onSubmit={handlePromptSubmit}
+      />
+
       <div style={{ position: 'relative', flexShrink: 0 }}>
         <StatusBar
-          branch={activeProject.branch}
-          projectName={activeProject.name}
-          modified={activeProject.dirty ? 2 : 0}
+          branch={activeProject?.branch ?? ''}
+          projectName={activeProject?.name ?? ''}
+          modified={activeProject?.dirty ? 2 : 0}
           onComputeClick={() => setComputeOpen((o) => !o)}
         />
         {computeOpen && (

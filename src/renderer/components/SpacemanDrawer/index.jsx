@@ -6,7 +6,6 @@ import BrowserTab from './BrowserTab.jsx';
 import EditorTab from './EditorTab.jsx';
 import ChainTab from './ChainTab.jsx';
 import MemoryTab from './MemoryTab.jsx';
-import PromptStrip from './PromptStrip.jsx';
 
 export default function SpacemanDrawer({
   width,
@@ -19,8 +18,8 @@ export default function SpacemanDrawer({
   onCloseEditor,
   projectName,
   branch,
-  onPromptSubmit,
   onOpenSettings,
+  promptActionRef,
 }) {
   const tab = spaceman?.tab ?? 'chat';
 
@@ -52,20 +51,19 @@ export default function SpacemanDrawer({
       />
 
       <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-        {tab === 'chat'    && <ChatTab    messages={spaceman?.chat}          mode={mode} />}
+        {tab === 'chat'    && (
+          <ChatTab
+            mode={mode}
+            projectName={projectName}
+            branch={branch}
+            onPromptRef={promptActionRef}
+          />
+        )}
         {tab === 'browser' && mode === 'project' && <BrowserTab items={spaceman?.browser?.items ?? []} />}
-        {tab === 'editor'  && <EditorTab  file={editorFile}                  onClose={onCloseEditor} />}
-        {tab === 'chain'   && <ChainTab   chain={spaceman?.chain}            mode={mode} />}
-        {tab === 'memory'  && <MemoryTab  mems={spaceman?.memory}            mode={mode} />}
+        {tab === 'editor'  && <EditorTab  file={editorFile} onClose={onCloseEditor} />}
+        {tab === 'chain'   && <ChainTab   chain={spaceman?.chain} mode={mode} />}
+        {tab === 'memory'  && <MemoryTab  mems={spaceman?.memory} mode={mode} />}
       </div>
-
-      {(tab === 'chat' || tab === 'editor') && (
-        <PromptStrip
-          mode={mode}
-          activeTab={tab}
-          onSubmit={onPromptSubmit}
-        />
-      )}
     </div>
   );
 }

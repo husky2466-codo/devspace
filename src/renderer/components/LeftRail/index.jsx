@@ -12,6 +12,7 @@ export default function LeftRail({
   onPageChange,
   projects,
   activeProjectId,
+  activeFiles,
   onSelectProject,
   onFileOpen,
   pickerOpen,
@@ -120,8 +121,8 @@ export default function LeftRail({
         </div>
 
         <div style={{ flex: 1, overflowY: 'auto', padding: '4px 0' }}>
-          {activeProject && activeProject.files.length > 0 ? (
-            <FileTree files={activeProject.files} onFileOpen={onFileOpen} />
+          {activeFiles && activeFiles.length > 0 ? (
+            <FileTree files={activeFiles} onFileOpen={onFileOpen} />
           ) : (
             <div style={{
               padding: '16px 14px',
@@ -130,7 +131,7 @@ export default function LeftRail({
               color: 'var(--text-dim)',
               letterSpacing: '0.08em',
             }}>
-              NO FILES
+              {activeProject ? 'LOADING...' : 'NO FILES'}
             </div>
           )}
         </div>

@@ -109,3 +109,4 @@ CLAUDE.md
 CLAUDELONGTERM.md
 .claude/templates/CLAUDE-TEMPLATE.md
 .claude/templates/CLAUDELONGTERM-TEMPLATE.md
+.env.local
