@@ -293,9 +293,15 @@ function StreamingBubble({ text, accentColor }) {
   );
 }
 
-export default function ChatTab({ mode, projectId, projectName, branch, onPromptRef }) {
+export default function ChatTab({ mode, projectId, projectName, branch, projects, onPromptRef }) {
+  const [scopedIds, setScopedIds] = useState([]);
+
+  const scopedProjectNames = scopedIds.length > 0
+    ? projects?.filter((p) => scopedIds.includes(p.id)).map((p) => p.name).join(', ')
+    : null;
+
   const { messages, streaming, streamingText, hasKey, error, sendMessage, clearMessages, saveKey } =
-    useSpaceman({ projectId, projectName, branch, mode });
+    useSpaceman({ projectId, projectName, branch, mode, scopedProjectNames });
 
   const bottomRef = useRef(null);
   const accentColor = mode === 'global' ? 'var(--accent-global)' : 'var(--accent)';
@@ -326,6 +332,64 @@ export default function ChatTab({ mode, projectId, projectName, branch, onPrompt
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+      {/* Scope chips — global mode only */}
+      {mode === 'global' && projects?.length > 0 && (
+        <div style={{
+          flexShrink: 0,
+          padding: '6px 10px',
+          borderBottom: '1px solid var(--border)',
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: 4,
+          background: 'var(--bg-sunken)',
+        }}>
+          <span style={{
+            fontFamily: 'var(--font-mono)', fontSize: 9,
+            color: 'var(--text-dim)', letterSpacing: '0.1em',
+            alignSelf: 'center', marginRight: 4,
+          }}>
+            SCOPE:
+          </span>
+          {projects.map((p) => {
+            const active = scopedIds.length === 0 || scopedIds.includes(p.id);
+            return (
+              <span
+                key={p.id}
+                onClick={() => setScopedIds((prev) => {
+                  if (prev.length === 0) return [p.id];
+                  if (prev.includes(p.id)) {
+                    const next = prev.filter((id) => id !== p.id);
+                    return next.length === 0 ? [] : next;
+                  }
+                  return [...prev, p.id];
+                })}
+                style={{
+                  fontFamily: 'var(--font-mono)', fontSize: 9.5,
+                  padding: '2px 7px', cursor: 'pointer',
+                  border: `1px solid ${active ? 'var(--accent-global)' : 'var(--border)'}`,
+                  color: active ? 'var(--accent-global)' : 'var(--text-dim)',
+                  background: active ? 'var(--accent-global-soft)' : 'transparent',
+                  userSelect: 'none',
+                }}
+              >
+                {p.name}
+              </span>
+            );
+          })}
+          {scopedIds.length > 0 && (
+            <span
+              onClick={() => setScopedIds([])}
+              style={{
+                fontFamily: 'var(--font-mono)', fontSize: 9,
+                color: 'var(--text-dim)', cursor: 'pointer',
+                alignSelf: 'center', marginLeft: 2,
+              }}
+            >
+              all ×
+            </span>
+          )}
+        </div>
+      )}
       {/* Message list */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '14px 14px 0', userSelect: 'text' }}>
         {showEmpty && (

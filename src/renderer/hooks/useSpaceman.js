@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 
-export function useSpaceman({ projectId, projectName, branch, mode }) {
+export function useSpaceman({ projectId, projectName, branch, mode, scopedProjectNames }) {
   const [messages, setMessages] = useState([]);
   const [streaming, setStreaming] = useState(false);
   const [streamingText, setStreamingText] = useState('');
@@ -80,7 +80,7 @@ export function useSpaceman({ projectId, projectName, branch, mode }) {
     cleanupRef.current = [offToken, offDone, offError];
 
     const systemPrompt = mode === 'global'
-      ? 'You are Spaceman, a senior engineering AI orchestrating across multiple projects in Dev-Space.ai. Be concise and practical.'
+      ? `You are Spaceman, a senior engineering AI orchestrating across multiple projects in Dev-Space.ai.${scopedProjectNames ? ` You are currently scoped to: ${scopedProjectNames}.` : ''} Be concise and practical.`
       : `You are Spaceman, a senior engineering AI working inside the "${projectName}" project (branch: ${branch ?? 'main'}) in Dev-Space.ai. Be concise and practical.`;
 
     try {
@@ -95,7 +95,7 @@ export function useSpaceman({ projectId, projectName, branch, mode }) {
       setStreaming(false);
       setStreamingText('');
     }
-  }, [messages, streaming, hasKey, projectName, branch, mode, storageKey]);
+  }, [messages, streaming, hasKey, projectName, branch, mode, scopedProjectNames, storageKey]);
 
   const clearMessages = useCallback(() => {
     setMessages([]);
