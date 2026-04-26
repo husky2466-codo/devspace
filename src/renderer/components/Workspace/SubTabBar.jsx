@@ -2,26 +2,32 @@ import StatusDot from '../primitives/StatusDot.jsx';
 
 export default function SubTabBar({ terminals, activeId, onSelect, onClose, onSpawn }) {
   return (
-    <div style={{
-      height: 28,
-      flexShrink: 0,
-      display: 'flex',
-      alignItems: 'stretch',
-      background: 'var(--bg-sunken)',
-      borderBottom: '1px solid var(--border)',
-      fontFamily: 'var(--font-mono)',
-      fontSize: 11,
-      overflow: 'hidden',
-    }}>
+    <div
+      role="tablist"
+      aria-label="Terminals"
+      style={{
+        height: 28,
+        flexShrink: 0,
+        display: 'flex',
+        alignItems: 'stretch',
+        background: 'var(--bg-sunken)',
+        borderBottom: '1px solid var(--border)',
+        fontFamily: 'var(--font-mono)',
+        fontSize: 11,
+        overflow: 'hidden',
+      }}
+    >
       {terminals.map((t) => {
         const isActive = t.id === activeId;
         return (
-          <button
+          <div
             key={t.id}
+            role="tab"
+            aria-selected={isActive}
             onClick={() => onSelect(t.id)}
-            aria-pressed={isActive}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onSelect(t.id); }}
+            tabIndex={isActive ? 0 : -1}
             style={{
-              all: 'unset', boxSizing: 'border-box',
               padding: '0 10px',
               display: 'flex',
               alignItems: 'center',
@@ -31,7 +37,7 @@ export default function SubTabBar({ terminals, activeId, onSelect, onClose, onSp
               borderRight: '1px solid var(--border)',
               borderTop: isActive ? '1px solid var(--accent)' : '1px solid transparent',
               cursor: 'pointer',
-              flexShrink: 0, height: '100%',
+              flexShrink: 0,
             }}
           >
             <StatusDot kind={t.status} pulse={t.status === 'run'} size={5} />
@@ -46,7 +52,7 @@ export default function SubTabBar({ terminals, activeId, onSelect, onClose, onSp
             >
               ×
             </button>
-          </button>
+          </div>
         );
       })}
 
