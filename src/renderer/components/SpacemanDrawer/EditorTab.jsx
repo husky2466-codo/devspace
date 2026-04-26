@@ -44,7 +44,7 @@ function GuardBtn({ label, primary, onClick }) {
   );
 }
 
-function CodeArea({ file, onDirtyChange, onCursorChange, contentRef, handleSaveRef }) {
+function CodeArea({ file, onDirtyChange, onCursorChange, contentRef, handleSaveRef, monacoTheme }) {
   const [content, setContent] = useState('');
   const [loading, setLoading] = useState(true);
   const editorRef = useRef(null);
@@ -110,7 +110,7 @@ function CodeArea({ file, onDirtyChange, onCursorChange, contentRef, handleSaveR
       value={content}
       onChange={handleChange}
       onMount={handleMount}
-      theme="vs-dark"
+      theme={monacoTheme ?? 'vs-dark'}
       options={{
         fontSize: 12,
         fontFamily: 'JetBrains Mono, monospace',
@@ -177,7 +177,7 @@ function EmptyState() {
   );
 }
 
-export default function EditorTab({ file, onClose, onCursorChange }) {
+export default function EditorTab({ file, onClose, onCursorChange, monacoTheme }) {
   const [findOpen, setFindOpen] = useState(false);
   const [replaceOpen, setReplaceOpen] = useState(false);
   const [query] = useState('caret');
@@ -447,6 +447,7 @@ export default function EditorTab({ file, onClose, onCursorChange }) {
           onCursorChange={onCursorChange}
           contentRef={contentRef}
           handleSaveRef={handleSaveRef}
+          monacoTheme={monacoTheme}
         />
       </div>
 

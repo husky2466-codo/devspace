@@ -34,8 +34,22 @@ export default function IDE() {
   const [rightWidth, setRightWidth]         = useState(() => loadLayout().rightWidth ?? 340);
   const [railPage, setRailPage]             = useState(() => loadLayout().railPage ?? 'projects');
 
-  const [projects, setProjects]   = useState(SEED_PROJECTS);
-  const [activeProjectId, setActiveProjectId] = useState(null);
+  const [projects, setProjects] = useState(() => {
+    try {
+      const stored = localStorage.getItem('ds.v3.projects');
+      if (stored) return JSON.parse(stored);
+    } catch {}
+    return SEED_PROJECTS;
+  });
+
+  const [activeProjectId, setActiveProjectId] = useState(() => {
+    try {
+      const storedProjects = JSON.parse(localStorage.getItem('ds.v3.projects') || '[]');
+      const storedActive = localStorage.getItem('ds.v3.activeProject');
+      if (storedActive && storedProjects.find(p => p.id === storedActive)) return storedActive;
+    } catch {}
+    return null;
+  });
 
   // New-project flow
   const [pickerOpen, setPickerOpen]       = useState(false);
@@ -138,6 +152,19 @@ export default function IDE() {
       leftCollapsed, rightCollapsed, leftWidth, rightWidth, railPage,
     }));
   }, [leftCollapsed, rightCollapsed, leftWidth, rightWidth, railPage]);
+
+  useEffect(() => {
+    try {
+      const toSave = projects.map(({ id, name, branch, last, activity, dirty, _variant, _fields, _detected }) => ({
+        id, name, branch, last, activity, dirty: false, _variant, _fields, _detected,
+      }));
+      localStorage.setItem('ds.v3.projects', JSON.stringify(toSave));
+    } catch {}
+  }, [projects]);
+
+  useEffect(() => {
+    if (activeProjectId) localStorage.setItem('ds.v3.activeProject', activeProjectId);
+  }, [activeProjectId]);
 
   // Sync dirty state to macOS traffic light close button dot
   useEffect(() => {
@@ -413,6 +440,7 @@ export default function IDE() {
             onOpenSettings={() => setSettingsOpen(true)}
             promptActionRef={promptActionRef}
             onCursorChange={setCursorPos}
+            monacoTheme={themeId === 'paper' ? 'vs' : 'vs-dark'}
           />
         ) : (
           <div style={{
