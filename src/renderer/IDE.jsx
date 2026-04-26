@@ -34,7 +34,7 @@ export default function IDE() {
   const [railPage, setRailPage]             = useState(() => loadLayout().railPage ?? 'projects');
 
   const [projects, setProjects]   = useState(SEED_PROJECTS);
-  const [activeProjectId, setActiveProjectId] = useState('forge');
+  const [activeProjectId, setActiveProjectId] = useState(null);
 
   // New-project flow
   const [pickerOpen, setPickerOpen]       = useState(false);
@@ -62,7 +62,7 @@ export default function IDE() {
     }));
   }, [leftCollapsed, rightCollapsed, leftWidth, rightWidth, railPage]);
 
-  const activeProject = projects.find((p) => p.id === activeProjectId) ?? projects[0];
+  const activeProject = projects.find((p) => p.id === activeProjectId) ?? null;
 
   // Active project workspace slice
   const proj = byProject[activeProjectId] ?? makeProjectState();
@@ -136,7 +136,7 @@ export default function IDE() {
       name:   node.name,
       path:   node.path ?? '',
       git:    node.git,
-      branch: activeProject.branch,
+      branch: activeProject?.branch ?? '',
       dirty:  node.dirty ?? false,
       errors: node.errors ?? [],
       ghost:  node.ghost ?? false,
@@ -189,10 +189,10 @@ export default function IDE() {
     <div style={{ width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
       <NativeTitleBar
-        projectName={activeProject.name}
-        branch={activeProject.branch}
-        dirty={activeProject.dirty}
-        modified={activeProject.dirty ? 2 : 0}
+        projectName={activeProject?.name ?? 'Dev-Space.ai'}
+        branch={activeProject?.branch ?? ''}
+        dirty={activeProject?.dirty ?? false}
+        modified={activeProject?.dirty ? 2 : 0}
       />
 
       <TopBar
@@ -240,6 +240,22 @@ export default function IDE() {
             onCancel={handleCancelNewProject}
             onCreate={handleCreateProject}
           />
+        ) : projects.length === 0 ? (
+          <div style={{
+            flex: 1, display: 'flex', flexDirection: 'column',
+            alignItems: 'center', justifyContent: 'center', gap: 16,
+            background: 'var(--bg)',
+          }}>
+            <div style={{
+              fontFamily: 'var(--font-mono)', fontSize: 10,
+              color: 'var(--text-dim)', letterSpacing: '0.14em',
+            }}>
+              NO PROJECTS
+            </div>
+            <div style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6, textAlign: 'center' }}>
+              Click <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--text)' }}>+ NEW</span> in the left rail<br />to add your first project.
+            </div>
+          </div>
         ) : (
           <Workspace
             terminals={terminals}
@@ -249,7 +265,6 @@ export default function IDE() {
             onCloseTerm={handleCloseTerm}
             onSpawnTerm={handleSpawnTerm}
             onAcknowledge={handleAcknowledge}
-            onPromptSubmit={() => {}}
           />
         )}
 
@@ -263,9 +278,8 @@ export default function IDE() {
             onModeChange={handleModeChange}
             editorFile={editorFile}
             onCloseEditor={handleCloseEditor}
-            projectName={activeProject.name}
-            branch={activeProject.branch}
-            onPromptSubmit={() => {}}
+            projectName={activeProject?.name ?? ''}
+            branch={activeProject?.branch ?? ''}
             onOpenSettings={() => setSettingsOpen(true)}
           />
         ) : (
@@ -293,9 +307,9 @@ export default function IDE() {
 
       <div style={{ position: 'relative', flexShrink: 0 }}>
         <StatusBar
-          branch={activeProject.branch}
-          projectName={activeProject.name}
-          modified={activeProject.dirty ? 2 : 0}
+          branch={activeProject?.branch ?? ''}
+          projectName={activeProject?.name ?? ''}
+          modified={activeProject?.dirty ? 2 : 0}
           onComputeClick={() => setComputeOpen((o) => !o)}
         />
         {computeOpen && (
