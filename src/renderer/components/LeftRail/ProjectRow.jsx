@@ -2,9 +2,11 @@ import StatusDot from '../primitives/StatusDot.jsx';
 
 export default function ProjectRow({ project, active, onSelect }) {
   return (
-    <div
+    <button
       onClick={onSelect}
+      aria-pressed={active}
       style={{
+        all: 'unset', boxSizing: 'border-box', width: '100%',
         display: 'flex',
         alignItems: 'center',
         gap: 8,
@@ -42,6 +44,6 @@ export default function ProjectRow({ project, active, onSelect }) {
       {project.dirty && (
         <span style={{ color: 'var(--warn)', fontSize: 9 }}>●</span>
       )}
-    </div>
+    </button>
   );
 }

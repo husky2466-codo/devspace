@@ -56,6 +56,69 @@ export default function IDE() {
     localStorage.setItem('ds.v3.tone', themeId);
   }, [themeId]);
 
+  // Global keyboard shortcuts
+  useEffect(() => {
+    function onKeyDown(e) {
+      if (!e.metaKey) return;
+      switch (e.key) {
+        case ',':
+          e.preventDefault();
+          setSettingsSection('appearance');
+          setSettingsOpen(true);
+          break;
+        case '\\':
+          e.preventDefault();
+          setLeftCollapsed((c) => !c);
+          break;
+        case '/':
+          e.preventDefault();
+          setRightCollapsed((c) => !c);
+          break;
+        case 't':
+          e.preventDefault();
+          handleSpawnTerm();
+          break;
+        case 'w':
+          e.preventDefault();
+          if (terminals.length > 0 && activeTermId) handleCloseTerm(activeTermId);
+          break;
+        case '1':
+          e.preventDefault();
+          handleTabChange('chat');
+          if (rightCollapsed) setRightCollapsed(false);
+          break;
+        case '2':
+          e.preventDefault();
+          handleTabChange('editor');
+          if (rightCollapsed) setRightCollapsed(false);
+          break;
+        case '3':
+          e.preventDefault();
+          handleTabChange('chain');
+          if (rightCollapsed) setRightCollapsed(false);
+          break;
+        case ']':
+          e.preventDefault();
+          if (terminals.length > 1) {
+            const idx = terminals.findIndex((t) => t.id === activeTermId);
+            handleSelectTerm(terminals[(idx + 1) % terminals.length].id);
+          }
+          break;
+        case '[':
+          e.preventDefault();
+          if (terminals.length > 1) {
+            const idx = terminals.findIndex((t) => t.id === activeTermId);
+            handleSelectTerm(terminals[(idx - 1 + terminals.length) % terminals.length].id);
+          }
+          break;
+        default: break;
+      }
+    }
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [terminals, activeTermId, rightCollapsed]);
+
   useEffect(() => {
     localStorage.setItem('ds.v3.layout', JSON.stringify({
       leftCollapsed, rightCollapsed, leftWidth, rightWidth, railPage,

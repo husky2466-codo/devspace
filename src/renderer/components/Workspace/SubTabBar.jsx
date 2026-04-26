@@ -16,10 +16,12 @@ export default function SubTabBar({ terminals, activeId, onSelect, onClose, onSp
       {terminals.map((t) => {
         const isActive = t.id === activeId;
         return (
-          <div
+          <button
             key={t.id}
             onClick={() => onSelect(t.id)}
+            aria-pressed={isActive}
             style={{
+              all: 'unset', boxSizing: 'border-box',
               padding: '0 10px',
               display: 'flex',
               alignItems: 'center',
@@ -29,35 +31,41 @@ export default function SubTabBar({ terminals, activeId, onSelect, onClose, onSp
               borderRight: '1px solid var(--border)',
               borderTop: isActive ? '1px solid var(--accent)' : '1px solid transparent',
               cursor: 'pointer',
-              flexShrink: 0,
+              flexShrink: 0, height: '100%',
             }}
           >
             <StatusDot kind={t.status} pulse={t.status === 'run'} size={5} />
             <span>{t.name}</span>
-            <span
+            <button
               onClick={(e) => { e.stopPropagation(); onClose(t.id); }}
-              style={{ color: 'var(--text-dim)', cursor: 'pointer', marginLeft: 2 }}
+              aria-label={`Close ${t.name}`}
+              style={{
+                all: 'unset',
+                color: 'var(--text-dim)', cursor: 'pointer', marginLeft: 2,
+              }}
             >
               ×
-            </span>
-          </div>
+            </button>
+          </button>
         );
       })}
 
-      <div
+      <button
         onClick={onSpawn}
+        aria-label="New terminal"
         style={{
+          all: 'unset',
           padding: '0 10px',
           display: 'flex',
           alignItems: 'center',
           color: 'var(--text-dim)',
           cursor: 'pointer',
           fontSize: 14,
-          flexShrink: 0,
+          flexShrink: 0, height: '100%',
         }}
       >
         +
-      </div>
+      </button>
 
       <div style={{ flex: 1 }} />
     </div>

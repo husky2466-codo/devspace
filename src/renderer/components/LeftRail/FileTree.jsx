@@ -19,9 +19,11 @@ function FileNode({ node, depth, onFileOpen }) {
 
   return (
     <>
-      <div
+      <button
         onClick={handleClick}
+        aria-expanded={isDir ? open : undefined}
         style={{
+          all: 'unset', boxSizing: 'border-box', width: '100%',
           display: 'flex',
           alignItems: 'center',
           gap: 5,
@@ -57,7 +59,7 @@ function FileNode({ node, depth, onFileOpen }) {
         {node.git && (
           <span style={{ fontSize: 9, color: gitColor }}>{node.git}</span>
         )}
-      </div>
+      </button>
       {isDir && open && (
         <FileTree files={node.children} depth={depth + 1} onFileOpen={onFileOpen} />
       )}

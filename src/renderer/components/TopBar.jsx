@@ -70,10 +70,12 @@ export default function TopBar({
         {projectTabs.map((tab) => {
           const isActive = tab.id === activeProjectId;
           return (
-            <div
+            <button
               key={tab.id}
               onClick={() => onProjectSelect(tab.id)}
+              aria-pressed={isActive}
               style={{
+                all: 'unset', boxSizing: 'border-box',
                 padding: '0 14px',
                 display: 'flex', alignItems: 'center', gap: 7,
                 fontFamily: 'var(--font-mono)', fontSize: 11,
@@ -81,7 +83,7 @@ export default function TopBar({
                 background: isActive ? 'var(--bg)' : 'transparent',
                 borderRight: '1px solid var(--border)',
                 borderTop: isActive ? '1px solid var(--accent)' : '1px solid transparent',
-                cursor: 'pointer',
+                cursor: 'pointer', height: '100%',
               }}
             >
               <StatusDot
@@ -94,7 +96,7 @@ export default function TopBar({
                 <span style={{ color: 'var(--warn)', fontSize: 8 }}>●</span>
               )}
               <span style={{ color: 'var(--text-dim)', marginLeft: 4, fontSize: 11 }}>×</span>
-            </div>
+            </button>
           );
         })}
         <div style={{ flex: 1 }} />
@@ -107,11 +109,13 @@ export default function TopBar({
         borderLeft: '1px solid var(--border)',
       }}>
         {THEME_DOTS.map(({ id, bg }) => (
-          <span
+          <button
             key={id}
             onClick={() => onThemeChange(id)}
-            title={id}
+            aria-label={`${id} theme`}
+            aria-pressed={activeThemeId === id}
             style={{
+              all: 'unset',
               display: 'inline-block',
               width: 10, height: 10, borderRadius: 999,
               background: bg,
@@ -136,9 +140,11 @@ export default function TopBar({
               opacity={rightCollapsed ? 0.3 : 0.9} />
           </svg>
         </button>
-        <span
+        <button
           onClick={onSettingsOpen}
+          aria-label="Open settings"
           style={{
+            all: 'unset',
             fontFamily: 'var(--font-mono)', fontSize: 10,
             color: 'var(--text-muted)',
             padding: '3px 7px',
@@ -148,7 +154,7 @@ export default function TopBar({
           }}
         >
           ⌘,
-        </span>
+        </button>
       </div>
     </div>
   );

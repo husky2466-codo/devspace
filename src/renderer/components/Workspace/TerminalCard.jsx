@@ -16,13 +16,17 @@ export default function TerminalCard({ term, active, finished, onClick }) {
 
   return (
     <div
-      onClick={onClick}
+      onClick={finished ? onClick : undefined}
+      role={finished ? 'button' : undefined}
+      tabIndex={finished ? 0 : undefined}
+      aria-label={finished ? `${term.name} — click to acknowledge` : undefined}
+      onKeyDown={finished ? (e) => { if (e.key === 'Enter' || e.key === ' ') onClick(); } : undefined}
       style={{
         display: 'flex',
         flexDirection: 'column',
         minHeight: 0,
         border,
-        cursor: 'default',
+        cursor: finished ? 'pointer' : 'default',
         position: 'relative',
         animation: finished ? 'smFinished 1.8s ease-in-out infinite' : 'none',
       }}

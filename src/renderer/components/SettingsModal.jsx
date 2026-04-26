@@ -29,10 +29,12 @@ function AppearanceSection({ activeThemeId, onThemeChange }) {
       </div>
       <div style={{ display: 'flex', gap: 12 }}>
         {THEMES.map((t) => (
-          <div
+          <button
             key={t.id}
             onClick={() => onThemeChange(t.id)}
+            aria-pressed={activeThemeId === t.id}
             style={{
+              all: 'unset', boxSizing: 'border-box',
               flex: 1,
               padding: 14,
               cursor: 'pointer',
@@ -61,7 +63,7 @@ function AppearanceSection({ activeThemeId, onThemeChange }) {
             }}>
               {t.tagline}
             </div>
-          </div>
+          </button>
         ))}
       </div>
     </div>
@@ -415,10 +417,12 @@ export default function SettingsModal({ open, onClose, activeThemeId, onThemeCha
             const id = s.toLowerCase();
             const active = section === id;
             return (
-              <div
+              <button
                 key={s}
                 onClick={() => setSection(id)}
+                aria-pressed={active}
                 style={{
+                  all: 'unset', boxSizing: 'border-box', width: '100%',
                   padding: '9px 16px',
                   cursor: 'pointer',
                   fontSize: 13,
@@ -428,7 +432,7 @@ export default function SettingsModal({ open, onClose, activeThemeId, onThemeCha
                 }}
               >
                 {s}
-              </div>
+              </button>
             );
           })}
         </div>

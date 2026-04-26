@@ -9,6 +9,7 @@ const VARIANTS = [
 
 export default function NewProjectPicker({ onSelect, onClose }) {
   const ref = useRef(null);
+  const [hoverId, setHoverId] = useState(null);
 
   useEffect(() => {
     function onDown(e) {
@@ -21,6 +22,8 @@ export default function NewProjectPicker({ onSelect, onClose }) {
   return (
     <div
       ref={ref}
+      role="menu"
+      aria-label="New project type"
       style={{
         position: 'absolute',
         top: 36,
@@ -43,16 +46,20 @@ export default function NewProjectPicker({ onSelect, onClose }) {
         NEW PROJECT
       </div>
       {VARIANTS.map((v) => (
-        <div
+        <button
           key={v.id}
+          role="menuitem"
           onClick={() => { onSelect(v.id); onClose(); }}
+          onMouseEnter={() => setHoverId(v.id)}
+          onMouseLeave={() => setHoverId(null)}
           style={{
+            all: 'unset', boxSizing: 'border-box', width: '100%',
+            display: 'block',
             padding: '9px 12px',
             cursor: 'pointer',
             borderBottom: '1px solid var(--border)',
+            background: hoverId === v.id ? 'var(--bg-sunken)' : 'transparent',
           }}
-          onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-sunken)'}
-          onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
         >
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text)', marginBottom: 2 }}>
             {v.label}
@@ -60,7 +67,7 @@ export default function NewProjectPicker({ onSelect, onClose }) {
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-dim)' }}>
             {v.sub}
           </div>
-        </div>
+        </button>
       ))}
     </div>
   );

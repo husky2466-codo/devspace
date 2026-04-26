@@ -16,9 +16,11 @@ export default function RailHeader({ label, onAction }) {
       }}>
         {label}
       </span>
-      <span
+      <button
         onClick={onAction}
+        aria-label="New project"
         style={{
+          all: 'unset',
           color: 'var(--text-muted)',
           cursor: 'pointer',
           padding: '2px 6px',
@@ -29,7 +31,7 @@ export default function RailHeader({ label, onAction }) {
         }}
       >
         + NEW
-      </span>
+      </button>
     </div>
   );
 }
