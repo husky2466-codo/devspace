@@ -408,6 +408,8 @@ export default function IDE() {
             onCloseEditor={handleCloseEditor}
             projectName={activeProject?.name ?? ''}
             branch={activeProject?.branch ?? ''}
+            projectId={activeProjectId}
+            projects={projects}
             onOpenSettings={() => setSettingsOpen(true)}
             promptActionRef={promptActionRef}
             onCursorChange={setCursorPos}

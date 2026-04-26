@@ -18,6 +18,8 @@ export default function SpacemanDrawer({
   onCloseEditor,
   projectName,
   branch,
+  projectId,
+  projects,
   onOpenSettings,
   promptActionRef,
   onCursorChange,
@@ -55,8 +57,10 @@ export default function SpacemanDrawer({
         {tab === 'chat'    && (
           <ChatTab
             mode={mode}
+            projectId={projectId}
             projectName={projectName}
             branch={branch}
+            projects={projects}
             onPromptRef={promptActionRef}
           />
         )}
