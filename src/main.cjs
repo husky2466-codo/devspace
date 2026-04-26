@@ -340,6 +340,46 @@ ipcMain.handle('fs:write-file', async (_e, filePath, content) => {
   }
 });
 
+ipcMain.handle('project:create', async (_e, { variant, fields }) => {
+  const { promisify } = require('util');
+  const execFileP = promisify(execFile);
+
+  try {
+    if (variant === 'import-local') {
+      await fs.promises.access(fields.path);
+      return { ok: true };
+    }
+
+    if (variant === 'create-local' || variant === 'local') {
+      const dir = fields.path.trim();
+      if (!dir) return { ok: false, error: 'No path specified' };
+      await fs.promises.mkdir(dir, { recursive: true });
+      await execFileP('git', ['init', '-b', fields.branch || 'main'], { cwd: dir });
+      return { ok: true };
+    }
+
+    if (variant === 'clone-local') {
+      const cloneInto = fields.path.trim();
+      const url = fields.url.trim();
+      if (!url) return { ok: false, error: 'No git URL specified' };
+      if (!cloneInto) return { ok: false, error: 'No destination path specified' };
+      await fs.promises.mkdir(cloneInto, { recursive: true });
+      const targetName = (fields.name || '').trim() || url.split('/').pop().replace(/\.git$/, '');
+      const targetDir = path.join(cloneInto, targetName);
+      const cloneArgs = ['clone'];
+      if ((fields.branch || '').trim()) cloneArgs.push('-b', fields.branch.trim());
+      cloneArgs.push(url, targetDir);
+      await execFileP('git', cloneArgs, { timeout: 120000 });
+      return { ok: true, clonedPath: targetDir };
+    }
+
+    // import-remote, create-remote, clone-remote — SSH-based, register only for now
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
 // ── Window + app ──────────────────────────────────────────────────────────────
 
 function createWindow() {

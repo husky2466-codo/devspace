@@ -277,6 +277,8 @@ export default function NewProjectForm({ variant, onCancel, onCreate }) {
   const [detected, setDetected] = useState({ isGit: false, branch: '', remoteUrl: '' });
   const [dirty, setDirty] = useState(false);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
 
   const meta = VARIANT_META[variant] ?? { label: variant, action: 'CREATE PROJECT', isImport: false };
 
@@ -313,9 +315,24 @@ export default function NewProjectForm({ variant, onCancel, onCreate }) {
     ? fields.path.trim().length > 0
     : fields.name.trim().length > 0 && fields.path.trim().length > 0;
 
-  const handleSubmit = () => {
-    if (!canSubmit) return;
+  const handleSubmit = async () => {
+    if (!canSubmit || submitting) return;
+    setSubmitting(true);
+    setSubmitError(null);
+
     const name = fields.name.trim() || detected.branch || fields.path.split('/').filter(Boolean).pop() || 'project';
+
+    const result = await window.electronAPI?.createProject({ variant, fields, detected });
+
+    if (result && !result.ok) {
+      setSubmitError(result.error || 'Failed to create project');
+      setSubmitting(false);
+      return;
+    }
+
+    // For clone-local, update path to the actual cloned directory
+    const finalPath = result?.clonedPath || fields.path;
+
     onCreate({
       id: name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
       name,
@@ -325,7 +342,7 @@ export default function NewProjectForm({ variant, onCancel, onCreate }) {
       dirty: false,
       files: [],
       _variant: variant,
-      _fields: { ...fields },
+      _fields: { ...fields, path: finalPath },
       _detected: { ...detected },
     });
   };
@@ -397,19 +414,21 @@ export default function NewProjectForm({ variant, onCancel, onCreate }) {
       }}>
         <button
           onClick={handleSubmit}
-          disabled={!canSubmit}
+          disabled={!canSubmit || submitting}
           style={{
             all: 'unset',
-            cursor: canSubmit ? 'pointer' : 'not-allowed',
+            cursor: (canSubmit && !submitting) ? 'pointer' : 'not-allowed',
             fontFamily: 'var(--font-mono)',
             fontSize: 11,
             padding: '6px 16px',
-            background: canSubmit ? 'var(--accent)' : 'var(--bg-sunken)',
-            color: canSubmit ? 'var(--bg)' : 'var(--text-dim)',
+            background: (canSubmit && !submitting) ? 'var(--accent)' : 'var(--bg-sunken)',
+            color: (canSubmit && !submitting) ? 'var(--bg)' : 'var(--text-dim)',
             letterSpacing: '0.08em',
           }}
         >
-          {meta.action}
+          {submitting
+            ? (variant === 'clone-local' || variant === 'clone-remote' ? 'CLONING...' : meta.action + '...')
+            : meta.action}
         </button>
         <button
           onClick={handleCancel}
@@ -426,10 +445,21 @@ export default function NewProjectForm({ variant, onCancel, onCreate }) {
         >
           CANCEL
         </button>
-        {!canSubmit && (
+        {!canSubmit && !submitting && (
           <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-dim)' }}>
             {isImport ? 'Select a folder to continue' : 'Name and path required'}
           </span>
+        )}
+        {submitError && (
+          <div style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: 10,
+            color: 'var(--err)',
+            padding: '4px 0',
+            flex: 1,
+          }}>
+            {submitError}
+          </div>
         )}
       </div>
 
