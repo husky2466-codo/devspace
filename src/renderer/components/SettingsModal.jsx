@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 
 const SECTIONS = ['Appearance', 'Editor', 'Spaceman', 'Compute', 'Integrations', 'Advanced'];
 
@@ -10,7 +10,7 @@ const THEMES = [
 
 const SPACEMAN_FIELDS = [
   ['Preset',          'Senior Engineer'],
-  ['Model',           'claude-sonnet-4-5'],
+  ['Model',           'claude-sonnet-4-6'],
   ['Router',          'claude-haiku-4-5'],
   ['Context window',  '200k tokens'],
 ];
@@ -68,9 +68,111 @@ function AppearanceSection({ activeThemeId, onThemeChange }) {
   );
 }
 
+function ApiKeyRow() {
+  const [status, setStatus] = useState(null); // null=loading, true=has key, false=no key
+  const [editing, setEditing] = useState(false);
+  const [val, setVal] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState(null);
+
+  useEffect(() => {
+    window.spaceman?.getKeyStatus().then(({ hasKey }) => setStatus(hasKey));
+  }, []);
+
+  const handleSave = async () => {
+    if (!val.startsWith('sk-ant-')) { setErr('Must start with sk-ant-'); return; }
+    setSaving(true); setErr(null);
+    try {
+      await window.spaceman.setKey(val.trim());
+      setStatus(true); setEditing(false); setVal('');
+    } catch (e) {
+      setErr(e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      await window.spaceman.deleteKey();
+      setStatus(false); setVal('');
+    } catch {}
+  };
+
+  return (
+    <div style={{
+      display: 'grid',
+      gridTemplateColumns: '130px 1fr',
+      gap: 8,
+      padding: '9px 0',
+      borderBottom: '1px solid var(--border)',
+      fontFamily: 'var(--font-mono)',
+      fontSize: 11,
+    }}>
+      <span style={{ color: 'var(--text-dim)', alignSelf: 'center' }}>API key</span>
+      <div>
+        {status === null && (
+          <span style={{ color: 'var(--text-dim)' }}>checking...</span>
+        )}
+        {status === true && !editing && (
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <span style={{ color: 'var(--ok)', letterSpacing: '0.06em' }}>● STORED</span>
+            <button onClick={() => setEditing(true)} style={{
+              all: 'unset', cursor: 'pointer', fontSize: 10,
+              color: 'var(--text-dim)', border: '1px solid var(--border)', padding: '2px 8px',
+            }}>replace</button>
+            <button onClick={handleDelete} style={{
+              all: 'unset', cursor: 'pointer', fontSize: 10,
+              color: 'var(--err)', border: '1px solid color-mix(in srgb, var(--err) 40%, var(--border))', padding: '2px 8px',
+            }}>remove</button>
+          </div>
+        )}
+        {(status === false || editing) && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <input
+                type="password"
+                value={val}
+                onChange={(e) => setVal(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSave()}
+                placeholder="sk-ant-..."
+                style={{
+                  all: 'unset', flex: 1,
+                  fontFamily: 'var(--font-mono)', fontSize: 11,
+                  color: 'var(--text)', background: 'var(--bg-sunken)',
+                  border: '1px solid var(--border)', padding: '4px 8px',
+                }}
+              />
+              <button onClick={handleSave} disabled={saving || !val} style={{
+                all: 'unset', cursor: saving || !val ? 'default' : 'pointer',
+                fontFamily: 'var(--font-mono)', fontSize: 10, padding: '4px 10px',
+                background: saving || !val ? 'var(--bg-sunken)' : 'var(--accent)',
+                color: saving || !val ? 'var(--text-dim)' : 'var(--bg)',
+                letterSpacing: '0.06em',
+              }}>
+                {saving ? 'SAVING...' : 'SAVE'}
+              </button>
+              {editing && (
+                <button onClick={() => { setEditing(false); setVal(''); setErr(null); }} style={{
+                  all: 'unset', cursor: 'pointer', fontFamily: 'var(--font-mono)',
+                  fontSize: 10, padding: '4px 8px', border: '1px solid var(--border)',
+                  color: 'var(--text-dim)',
+                }}>cancel</button>
+              )}
+            </div>
+            {err && <span style={{ color: 'var(--err)', fontSize: 10 }}>{err}</span>}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function SpacemanSection({ projects, activeProjectId, onProjectChange }) {
   return (
     <div>
+      <ApiKeyRow />
+
       {/* Per-project selector */}
       <div style={{
         display: 'flex',
