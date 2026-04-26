@@ -1,10 +1,18 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import SpacemanMark from '../primitives/SpacemanMark.jsx';
 
 const SCOPE_PROJECTS = ['forge', 'archivist', 'mindcraft', 'routines'];
 
-export default function PromptStrip({ mode, activeTab, onSubmit }) {
+export default function PromptStrip({ mode, activeTab, onSubmit, focusRef }) {
   const [val, setVal] = useState('');
+  const inputRef = useRef(null);
+
+  // Register focus callback so IDE can focus via keyboard shortcut
+  useEffect(() => {
+    if (focusRef) {
+      focusRef.current = () => inputRef.current?.focus();
+    }
+  }, [focusRef]);
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && val.trim()) {
@@ -61,6 +69,7 @@ export default function PromptStrip({ mode, activeTab, onSubmit }) {
         </span>
         <span style={{ color: 'var(--text-dim)' }}>›</span>
         <input
+          ref={inputRef}
           value={val}
           onChange={(e) => setVal(e.target.value)}
           onKeyDown={handleKeyDown}

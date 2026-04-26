@@ -56,10 +56,81 @@ export default function IDE() {
   const promptActionRef = useRef(null);
   const handlePromptSubmit = (text) => promptActionRef.current?.(text);
 
+  // Ref for focusing the prompt strip input from keyboard shortcut
+  const promptStripFocusRef = useRef(null);
+
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', themeId);
     localStorage.setItem('ds.v3.tone', themeId);
   }, [themeId]);
+
+  // Global keyboard shortcuts
+  useEffect(() => {
+    const onKey = (e) => {
+      if (!e.metaKey && !e.ctrlKey) return;
+      switch (e.key) {
+        case ',': // Settings
+          e.preventDefault();
+          setSettingsSection('appearance');
+          setSettingsOpen(true);
+          break;
+        case 't': // Spawn terminal
+          e.preventDefault();
+          handleSpawnTerm();
+          break;
+        case 'w': // Close active terminal
+          e.preventDefault();
+          if (activeTermId) handleCloseTerm(activeTermId);
+          break;
+        case ']': { // Next terminal
+          e.preventDefault();
+          const terms = byProject[activeProjectId]?.terminals ?? [];
+          if (terms.length < 2) break;
+          const idx = terms.findIndex((t) => t.id === activeTermId);
+          const next = terms[(idx + 1) % terms.length];
+          handleSelectTerm(next.id);
+          break;
+        }
+        case '[': { // Previous terminal
+          e.preventDefault();
+          const terms = byProject[activeProjectId]?.terminals ?? [];
+          if (terms.length < 2) break;
+          const idx = terms.findIndex((t) => t.id === activeTermId);
+          const prev = terms[(idx - 1 + terms.length) % terms.length];
+          handleSelectTerm(prev.id);
+          break;
+        }
+        case '\\': // Toggle left rail
+          e.preventDefault();
+          setLeftCollapsed((o) => !o);
+          break;
+        case '/': // Toggle Spaceman drawer
+          e.preventDefault();
+          setRightCollapsed((o) => !o);
+          break;
+        case 'l': // Focus prompt strip
+          e.preventDefault();
+          promptStripFocusRef.current?.();
+          break;
+        case '1': // Switch to CHAT tab
+          e.preventDefault();
+          handleTabChange('chat');
+          break;
+        case '2': // Switch to EDITOR tab
+          e.preventDefault();
+          handleTabChange('editor');
+          break;
+        case '3': // Switch to CHAIN tab
+          e.preventDefault();
+          handleTabChange('chain');
+          break;
+        default:
+          break;
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [activeProjectId, activeTermId, byProject, handleSpawnTerm, handleCloseTerm, handleSelectTerm, handleTabChange]);
 
   useEffect(() => {
     localStorage.setItem('ds.v3.layout', JSON.stringify({
@@ -349,6 +420,7 @@ export default function IDE() {
         mode={spacemanMode}
         activeTab={activeSpaceman?.tab ?? 'chat'}
         onSubmit={handlePromptSubmit}
+        focusRef={promptStripFocusRef}
       />
 
       <div style={{ position: 'relative', flexShrink: 0 }}>
