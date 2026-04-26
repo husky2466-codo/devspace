@@ -139,6 +139,23 @@ export default function IDE() {
     }));
   }, [leftCollapsed, rightCollapsed, leftWidth, rightWidth, railPage]);
 
+  // Sync dirty state to macOS traffic light close button dot
+  useEffect(() => {
+    window.electronAPI?.setDocumentEdited(activeProject?.dirty ?? false);
+  }, [activeProject?.dirty]);
+
+  // macOS application menu action handler
+  useEffect(() => {
+    const off = window.electronAPI?.onMenuAction?.((action) => {
+      if (action === 'menu:new-terminal') handleSpawnTerm();
+      if (action === 'menu:close-terminal' && activeTermId) handleCloseTerm(activeTermId);
+      if (action === 'menu:toggle-rail') setLeftCollapsed((o) => !o);
+      if (action === 'menu:toggle-spaceman') setRightCollapsed((o) => !o);
+      if (action === 'menu:open-settings') { setSettingsSection('appearance'); setSettingsOpen(true); }
+    });
+    return () => off?.();
+  }, [activeTermId, handleSpawnTerm, handleCloseTerm]);
+
   // File tree: read + watch when active project changes
   useEffect(() => {
     if (!activeProjectId) return;

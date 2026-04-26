@@ -1,37 +1,4 @@
-import { useState } from 'react';
 import StatusDot from './primitives/StatusDot.jsx';
-
-function TrafficLights() {
-  const [hovered, setHovered] = useState(false);
-  const buttons = [
-    { bg: '#ff5f57', glyph: '×' },
-    { bg: '#febc2e', glyph: '−' },
-    { bg: '#28c840', glyph: '+' },
-  ];
-  return (
-    <div
-      className="no-drag"
-      style={{ display: 'flex', gap: 8 }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-    >
-      {buttons.map(({ bg, glyph }) => (
-        <div
-          key={bg}
-          style={{
-            width: 12, height: 12, borderRadius: 999,
-            background: bg,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: 'rgba(0,0,0,0.55)', fontSize: 8, fontWeight: 700,
-            flexShrink: 0,
-          }}
-        >
-          {hovered ? glyph : ''}
-        </div>
-      ))}
-    </div>
-  );
-}
 
 export default function NativeTitleBar({ projectName = 'dev-space', branch = 'main', dirty = false, modified = 0 }) {
   return (
@@ -48,7 +15,8 @@ export default function NativeTitleBar({ projectName = 'dev-space', branch = 'ma
         position: 'relative',
       }}
     >
-      <TrafficLights />
+      {/* Spacer for native macOS traffic light buttons (positioned at x:12, y:8) */}
+      <div style={{ width: 80, flexShrink: 0 }} />
 
       <div style={{
         position: 'absolute', inset: 0,
