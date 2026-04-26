@@ -1,4 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+
+function getDefaultFolder() {
+  try {
+    return localStorage.getItem('ds.v3.defaultProjectsFolder') || '';
+  } catch {
+    return '';
+  }
+}
 
 function Field({ label, value, onChange, placeholder, type = 'text', multiline }) {
   return (
@@ -57,13 +65,77 @@ function Field({ label, value, onChange, placeholder, type = 'text', multiline }
   );
 }
 
+function PathField({ label, value, onChange, placeholder }) {
+  const handleBrowse = async () => {
+    const defaultPath = value || getDefaultFolder() || undefined;
+    const picked = await window.electronAPI?.browseFolder(defaultPath);
+    if (picked) onChange(picked);
+  };
+
+  return (
+    <div style={{
+      display: 'grid',
+      gridTemplateColumns: '140px 1fr',
+      gap: 12,
+      padding: '9px 0',
+      borderBottom: '1px solid var(--border)',
+      alignItems: 'center',
+    }}>
+      <span style={{
+        fontFamily: 'var(--font-mono)',
+        fontSize: 11,
+        color: 'var(--text-dim)',
+      }}>
+        {label}
+      </span>
+      <div style={{ display: 'flex', gap: 6 }}>
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          style={{
+            all: 'unset',
+            flex: 1,
+            fontFamily: 'var(--font-mono)',
+            fontSize: 11,
+            color: 'var(--text)',
+            background: 'var(--bg-sunken)',
+            border: '1px solid var(--border)',
+            padding: '5px 8px',
+          }}
+        />
+        <button
+          type="button"
+          onClick={handleBrowse}
+          style={{
+            all: 'unset',
+            cursor: 'pointer',
+            fontFamily: 'var(--font-mono)',
+            fontSize: 10,
+            padding: '5px 10px',
+            border: '1px solid var(--border)',
+            color: 'var(--text-muted)',
+            background: 'var(--chrome)',
+            letterSpacing: '0.06em',
+            flexShrink: 0,
+            whiteSpace: 'nowrap',
+          }}
+        >
+          BROWSE
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function LocalForm({ fields, onChange }) {
   return (
     <>
-      <Field label="Project name"  value={fields.name}   onChange={(v) => onChange('name', v)}   placeholder="my-project" />
-      <Field label="Local path"    value={fields.path}   onChange={(v) => onChange('path', v)}   placeholder="/Users/you/Projects/my-project" />
-      <Field label="Branch"        value={fields.branch} onChange={(v) => onChange('branch', v)} placeholder="main" />
-      <Field label="Description"   value={fields.desc}   onChange={(v) => onChange('desc', v)}   placeholder="What is this project?" multiline />
+      <Field     label="Project name"  value={fields.name}   onChange={(v) => onChange('name', v)}   placeholder="my-project" />
+      <PathField label="Local path"    value={fields.path}   onChange={(v) => onChange('path', v)}   placeholder="/Users/you/Projects/my-project" />
+      <Field     label="Branch"        value={fields.branch} onChange={(v) => onChange('branch', v)} placeholder="main" />
+      <Field     label="Description"   value={fields.desc}   onChange={(v) => onChange('desc', v)}   placeholder="What is this project?" multiline />
     </>
   );
 }
@@ -71,10 +143,10 @@ function LocalForm({ fields, onChange }) {
 function RemoteForm({ fields, onChange }) {
   return (
     <>
-      <Field label="Project name"  value={fields.name}   onChange={(v) => onChange('name', v)}   placeholder="my-project" />
-      <Field label="SSH host"      value={fields.host}   onChange={(v) => onChange('host', v)}   placeholder="user@host or alias from ~/.ssh/config" />
-      <Field label="Remote path"   value={fields.path}   onChange={(v) => onChange('path', v)}   placeholder="/home/user/projects/my-project" />
-      <Field label="Branch"        value={fields.branch} onChange={(v) => onChange('branch', v)} placeholder="main" />
+      <Field     label="Project name"  value={fields.name}   onChange={(v) => onChange('name', v)}   placeholder="my-project" />
+      <Field     label="SSH host"      value={fields.host}   onChange={(v) => onChange('host', v)}   placeholder="user@host or alias from ~/.ssh/config" />
+      <PathField label="Remote path"   value={fields.path}   onChange={(v) => onChange('path', v)}   placeholder="/home/user/projects/my-project" />
+      <Field     label="Branch"        value={fields.branch} onChange={(v) => onChange('branch', v)} placeholder="main" />
     </>
   );
 }
@@ -82,10 +154,10 @@ function RemoteForm({ fields, onChange }) {
 function CloneLocalForm({ fields, onChange }) {
   return (
     <>
-      <Field label="Project name"  value={fields.name}   onChange={(v) => onChange('name', v)}   placeholder="my-project" />
-      <Field label="Git URL"       value={fields.url}    onChange={(v) => onChange('url', v)}    placeholder="git@github.com:org/repo.git" />
-      <Field label="Clone into"    value={fields.path}   onChange={(v) => onChange('path', v)}   placeholder="/Users/you/Projects" />
-      <Field label="Branch"        value={fields.branch} onChange={(v) => onChange('branch', v)} placeholder="main (default)" />
+      <Field     label="Project name"  value={fields.name}   onChange={(v) => onChange('name', v)}   placeholder="my-project" />
+      <Field     label="Git URL"       value={fields.url}    onChange={(v) => onChange('url', v)}    placeholder="git@github.com:org/repo.git" />
+      <PathField label="Clone into"    value={fields.path}   onChange={(v) => onChange('path', v)}   placeholder="/Users/you/Projects" />
+      <Field     label="Branch"        value={fields.branch} onChange={(v) => onChange('branch', v)} placeholder="main (default)" />
     </>
   );
 }
@@ -93,11 +165,11 @@ function CloneLocalForm({ fields, onChange }) {
 function CloneRemoteForm({ fields, onChange }) {
   return (
     <>
-      <Field label="Project name"  value={fields.name}   onChange={(v) => onChange('name', v)}   placeholder="my-project" />
-      <Field label="SSH host"      value={fields.host}   onChange={(v) => onChange('host', v)}   placeholder="user@host or alias from ~/.ssh/config" />
-      <Field label="Git URL"       value={fields.url}    onChange={(v) => onChange('url', v)}    placeholder="git@github.com:org/repo.git" />
-      <Field label="Remote path"   value={fields.path}   onChange={(v) => onChange('path', v)}   placeholder="/home/user/projects" />
-      <Field label="Branch"        value={fields.branch} onChange={(v) => onChange('branch', v)} placeholder="main (default)" />
+      <Field     label="Project name"  value={fields.name}   onChange={(v) => onChange('name', v)}   placeholder="my-project" />
+      <Field     label="SSH host"      value={fields.host}   onChange={(v) => onChange('host', v)}   placeholder="user@host or alias from ~/.ssh/config" />
+      <Field     label="Git URL"       value={fields.url}    onChange={(v) => onChange('url', v)}    placeholder="git@github.com:org/repo.git" />
+      <PathField label="Remote path"   value={fields.path}   onChange={(v) => onChange('path', v)}   placeholder="/home/user/projects" />
+      <Field     label="Branch"        value={fields.branch} onChange={(v) => onChange('branch', v)} placeholder="main (default)" />
     </>
   );
 }

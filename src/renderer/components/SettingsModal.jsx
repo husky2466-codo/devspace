@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 
 const SECTIONS = ['Appearance', 'Editor', 'Spaceman', 'Compute', 'Integrations', 'Advanced'];
 
@@ -357,6 +357,150 @@ function PlaceholderSection({ name }) {
   );
 }
 
+function AdvancedSection() {
+  const [defaultFolder, setDefaultFolder] = useState(() => {
+    try { return localStorage.getItem('ds.v3.defaultProjectsFolder') || ''; } catch { return ''; }
+  });
+  const [saved, setSaved] = useState(false);
+
+  const handleBrowse = useCallback(async () => {
+    const picked = await window.electronAPI?.browseFolder(defaultFolder || undefined);
+    if (picked) {
+      setDefaultFolder(picked);
+      setSaved(false);
+    }
+  }, [defaultFolder]);
+
+  const handleSave = () => {
+    try {
+      localStorage.setItem('ds.v3.defaultProjectsFolder', defaultFolder);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch {}
+  };
+
+  const handleClear = () => {
+    setDefaultFolder('');
+    try { localStorage.removeItem('ds.v3.defaultProjectsFolder'); } catch {}
+    setSaved(false);
+  };
+
+  return (
+    <div>
+      <div style={{
+        fontFamily: 'var(--font-mono)',
+        fontSize: 11,
+        color: 'var(--text-dim)',
+        letterSpacing: '0.14em',
+        marginBottom: 20,
+      }}>
+        ADVANCED
+      </div>
+
+      {/* Default projects folder */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: '160px 1fr',
+        gap: 12,
+        padding: '9px 0',
+        borderBottom: '1px solid var(--border)',
+        alignItems: 'center',
+      }}>
+        <span style={{
+          fontFamily: 'var(--font-mono)',
+          fontSize: 11,
+          color: 'var(--text-dim)',
+        }}>
+          Default projects folder
+        </span>
+        <div style={{ display: 'flex', gap: 6 }}>
+          <input
+            type="text"
+            value={defaultFolder}
+            onChange={(e) => { setDefaultFolder(e.target.value); setSaved(false); }}
+            placeholder="/Users/you/Projects"
+            style={{
+              all: 'unset',
+              flex: 1,
+              fontFamily: 'var(--font-mono)',
+              fontSize: 11,
+              color: 'var(--text)',
+              background: 'var(--bg-sunken)',
+              border: '1px solid var(--border)',
+              padding: '5px 8px',
+            }}
+          />
+          <button
+            type="button"
+            onClick={handleBrowse}
+            style={{
+              all: 'unset',
+              cursor: 'pointer',
+              fontFamily: 'var(--font-mono)',
+              fontSize: 10,
+              padding: '5px 10px',
+              border: '1px solid var(--border)',
+              color: 'var(--text-muted)',
+              background: 'var(--chrome)',
+              letterSpacing: '0.06em',
+              flexShrink: 0,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            BROWSE
+          </button>
+        </div>
+      </div>
+
+      <div style={{
+        fontFamily: 'var(--font-mono)',
+        fontSize: 10,
+        color: 'var(--text-dim)',
+        marginTop: 8,
+        marginBottom: 20,
+        lineHeight: 1.5,
+      }}>
+        The folder browser opens here by default when adding a new project.
+      </div>
+
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <button
+          onClick={handleSave}
+          style={{
+            all: 'unset',
+            cursor: 'pointer',
+            fontFamily: 'var(--font-mono)',
+            fontSize: 11,
+            padding: '5px 14px',
+            background: saved ? 'var(--ok)' : 'var(--accent)',
+            color: 'var(--bg)',
+            letterSpacing: '0.06em',
+          }}
+        >
+          {saved ? 'SAVED' : 'SAVE'}
+        </button>
+        {defaultFolder && (
+          <button
+            onClick={handleClear}
+            style={{
+              all: 'unset',
+              cursor: 'pointer',
+              fontFamily: 'var(--font-mono)',
+              fontSize: 11,
+              padding: '5px 14px',
+              border: '1px solid var(--border)',
+              color: 'var(--text-dim)',
+              letterSpacing: '0.06em',
+            }}
+          >
+            CLEAR
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function SettingsModal({ open, onClose, activeThemeId, onThemeChange, projects, activeProjectId, defaultSection }) {
   const [section, setSection] = useState(defaultSection ?? 'appearance');
   const [spacemanProjectId, setSpacemanProjectId] = useState(activeProjectId ?? projects?.[0]?.id ?? 'forge');
@@ -440,7 +584,7 @@ export default function SettingsModal({ open, onClose, activeThemeId, onThemeCha
           {section === 'editor'      && <KeybindingsSection />}
           {section === 'compute'     && <ComputeSection />}
           {section === 'integrations'&& <PlaceholderSection name="integrations" />}
-          {section === 'advanced'    && <PlaceholderSection name="advanced" />}
+          {section === 'advanced'    && <AdvancedSection />}
         </div>
 
         {/* Close button */}

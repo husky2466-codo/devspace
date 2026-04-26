@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, ipcMain } = require('electron');
+const { app, BrowserWindow, Menu, ipcMain, dialog } = require('electron');
 const path = require('path');
 
 const isDev = process.env.NODE_ENV !== 'production';
@@ -39,6 +39,27 @@ async function deleteApiKey() {
   const kt = await getKeytar();
   return kt.deletePassword(KEYCHAIN_SERVICE, KEYCHAIN_ACCOUNT_ANTHROPIC);
 }
+
+// ── Dialog handlers ───────────────────────────────────────────────────────────
+
+ipcMain.handle('dialog:browse-folder', async (_event, defaultPath) => {
+  const result = await dialog.showOpenDialog({
+    properties: ['openDirectory', 'createDirectory'],
+    defaultPath: defaultPath || app.getPath('home'),
+  });
+  if (result.canceled || result.filePaths.length === 0) return null;
+  return result.filePaths[0];
+});
+
+ipcMain.handle('dialog:browse-file', async (_event, { defaultPath, filters } = {}) => {
+  const result = await dialog.showOpenDialog({
+    properties: ['openFile'],
+    defaultPath: defaultPath || app.getPath('home'),
+    filters: filters || [],
+  });
+  if (result.canceled || result.filePaths.length === 0) return null;
+  return result.filePaths[0];
+});
 
 // ── IPC handlers ──────────────────────────────────────────────────────────────
 
