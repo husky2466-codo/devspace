@@ -7,6 +7,7 @@ import CollapsedRail from './components/LeftRail/CollapsedRail.jsx';
 import Workspace from './components/Workspace/index.jsx';
 import SpacemanDrawer from './components/SpacemanDrawer/index.jsx';
 import SettingsModal from './components/SettingsModal.jsx';
+import ComputePopover from './components/ComputePopover.jsx';
 import NewProjectPicker from './components/NewProjectPicker.jsx';
 import NewProjectForm from './components/NewProjectForm.jsx';
 import { SEED_PROJECTS } from './data/seedProjects.js';
@@ -46,7 +47,9 @@ export default function IDE() {
   const [spacemanMode, setSpacemanMode] = useState('project');
   const [spaceman, setSpaceman]         = useState(SEED_SPACEMAN);
 
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen]     = useState(false);
+  const [settingsSection, setSettingsSection] = useState('appearance');
+  const [computeOpen, setComputeOpen]       = useState(false);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', themeId);
@@ -202,7 +205,7 @@ export default function IDE() {
         rightCollapsed={rightCollapsed}
         onToggleLeft={() => setLeftCollapsed((c) => !c)}
         onToggleRight={() => setRightCollapsed((c) => !c)}
-        onSettingsOpen={() => setSettingsOpen(true)}
+        onSettingsOpen={() => { setSettingsSection('appearance'); setSettingsOpen(true); }}
       />
 
       <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
@@ -288,11 +291,24 @@ export default function IDE() {
         )}
       </div>
 
-      <StatusBar
-        branch={activeProject.branch}
-        projectName={activeProject.name}
-        modified={activeProject.dirty ? 2 : 0}
-      />
+      <div style={{ position: 'relative', flexShrink: 0 }}>
+        <StatusBar
+          branch={activeProject.branch}
+          projectName={activeProject.name}
+          modified={activeProject.dirty ? 2 : 0}
+          onComputeClick={() => setComputeOpen((o) => !o)}
+        />
+        {computeOpen && (
+          <ComputePopover
+            onClose={() => setComputeOpen(false)}
+            onOpenSettings={(sec) => {
+              setComputeOpen(false);
+              setSettingsSection(sec ?? 'compute');
+              setSettingsOpen(true);
+            }}
+          />
+        )}
+      </div>
 
       <SettingsModal
         open={settingsOpen}
@@ -301,6 +317,7 @@ export default function IDE() {
         onThemeChange={setThemeId}
         projects={projects}
         activeProjectId={activeProjectId}
+        defaultSection={settingsSection}
       />
 
     </div>
