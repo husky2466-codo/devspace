@@ -126,7 +126,8 @@ export default function IDE() {
 
   // Terminal handlers — all mutate only the active project's slice
   const handleSpawnTerm = () => {
-    const t = makeTerminal(terminals);
+    const cwd = activeProject?._fields?.path;
+    const t = makeTerminal(terminals, cwd);
     setProj((cur) => ({
       ...cur,
       terminals: [...cur.terminals, t],

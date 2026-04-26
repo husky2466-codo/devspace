@@ -12,6 +12,20 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('fs:tree-update', (_e, payload) => cb(payload));
     return () => ipcRenderer.removeAllListeners('fs:tree-update');
   },
+  ptySpawn:   (termId, cwd, cols, rows) => ipcRenderer.invoke('pty:spawn', { termId, cwd, cols, rows }),
+  ptyWrite:   (termId, data)            => ipcRenderer.invoke('pty:write', { termId, data }),
+  ptyResize:  (termId, cols, rows)      => ipcRenderer.invoke('pty:resize', { termId, cols, rows }),
+  ptyKill:    (termId)                  => ipcRenderer.invoke('pty:kill', termId),
+  onPtyData:  (termId, cb) => {
+    const channel = `pty:data:${termId}`;
+    ipcRenderer.on(channel, (_e, data) => cb(data));
+    return () => ipcRenderer.removeAllListeners(channel);
+  },
+  onPtyExit:  (termId, cb) => {
+    const channel = `pty:exit:${termId}`;
+    ipcRenderer.once(channel, () => cb());
+    return () => ipcRenderer.removeAllListeners(channel);
+  },
 });
 
 contextBridge.exposeInMainWorld('spaceman', {

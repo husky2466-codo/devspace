@@ -5,7 +5,7 @@ export function makeProjectState() {
 export const SEED_BY_PROJECT = {};
 
 let termCounter = 0;
-export function makeTerminal(existingTerminals) {
+export function makeTerminal(existingTerminals, cwd) {
   const n = existingTerminals.length + 1;
   termCounter++;
   return {
@@ -14,5 +14,6 @@ export function makeTerminal(existingTerminals) {
     model: 'sonnet',
     status: 'idle',
     lines: [],
+    cwd: cwd || null,
   };
 }

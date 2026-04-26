@@ -1,11 +1,5 @@
 import StatusDot from '../primitives/StatusDot.jsx';
-
-const LINE_COLOR = {
-  prompt: 'var(--accent)',
-  ok:     'var(--ok)',
-  err:    'var(--err)',
-  dim:    'var(--text-dim)',
-};
+import XTermPanel from './XTermPanel.jsx';
 
 export default function TerminalCard({ term, active, finished, onClick }) {
   const border = finished
@@ -81,34 +75,22 @@ export default function TerminalCard({ term, active, finished, onClick }) {
       {/* Body */}
       <div style={{
         flex: 1,
-        padding: '8px 10px',
+        position: 'relative',
         background: finished ? 'color-mix(in srgb, var(--ok) 3%, var(--bg))' : 'var(--bg)',
-        fontFamily: 'var(--font-mono)',
-        fontSize: 11.5,
-        lineHeight: 1.55,
         overflow: 'hidden',
+        minHeight: 0,
       }}>
-        {term.lines.map((l, i) => (
-          <div key={i} style={{ color: LINE_COLOR[l.kind] ?? 'var(--text-muted)' }}>
-            {l.t}
-          </div>
-        ))}
         {!finished && (
-          <div style={{
-            display: 'inline-block',
-            width: 8,
-            height: 13,
-            background: 'var(--text)',
-            verticalAlign: 'text-bottom',
-            animation: 'tcCaret 1s step-end infinite',
-            marginTop: 2,
-          }} />
+          <XTermPanel termId={term.id} cwd={term.cwd} active={active} />
         )}
         {finished && (
           <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            height: '100%',
             color: 'color-mix(in srgb, var(--ok) 50%, transparent)',
             fontSize: 10,
-            marginTop: 4,
             fontFamily: 'var(--font-mono)',
             letterSpacing: '0.08em',
           }}>
