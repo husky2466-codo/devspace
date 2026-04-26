@@ -197,6 +197,152 @@ function SpacemanSection({ projects, activeProjectId, onProjectChange }) {
   );
 }
 
+const KEYBINDINGS = [
+  { action: 'Open settings',         keys: '⌘ ,' },
+  { action: 'Spawn terminal',        keys: '⌘ T' },
+  { action: 'Close terminal',        keys: '⌘ W' },
+  { action: 'Next terminal',         keys: '⌘ ]' },
+  { action: 'Previous terminal',     keys: '⌘ [' },
+  { action: 'Toggle left rail',      keys: '⌘ \\' },
+  { action: 'Toggle Spaceman drawer',keys: '⌘ /' },
+  { action: 'Find in file',          keys: '⌘ F' },
+  { action: 'Find and replace',      keys: '⌘ H' },
+  { action: 'Accept ghost edit',     keys: 'Tab' },
+  { action: 'Focus prompt strip',    keys: '⌘ L' },
+  { action: 'Switch to CHAT tab',    keys: '⌘ 1' },
+  { action: 'Switch to EDITOR tab',  keys: '⌘ 2' },
+  { action: 'Switch to CHAIN tab',   keys: '⌘ 3' },
+];
+
+function KeybindingsSection() {
+  return (
+    <div>
+      <div style={{
+        fontFamily: 'var(--font-mono)',
+        fontSize: 11,
+        color: 'var(--text-dim)',
+        letterSpacing: '0.14em',
+        marginBottom: 16,
+      }}>
+        KEYBOARD SHORTCUTS
+      </div>
+      <div style={{
+        fontFamily: 'var(--font-mono)',
+        fontSize: 10,
+        color: 'var(--text-dim)',
+        marginBottom: 12,
+        lineHeight: 1.5,
+      }}>
+        Keybindings are view-only in v1. Custom bindings coming soon.
+      </div>
+      {KEYBINDINGS.map(({ action, keys }) => (
+        <div key={action} style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr auto',
+          padding: '7px 0',
+          borderBottom: '1px solid var(--border)',
+          alignItems: 'center',
+        }}>
+          <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{action}</span>
+          <span style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: 11,
+            color: 'var(--text)',
+            background: 'var(--bg-sunken)',
+            border: '1px solid var(--border)',
+            padding: '2px 7px',
+            letterSpacing: '0.04em',
+          }}>
+            {keys}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+const SEED_COMPUTE_HOSTS = [
+  { id: 'local',   name: 'Local (this machine)', kind: 'local',  status: 'ok',  cpu: 34, mem: 61 },
+  { id: 'dgx1',    name: 'DGX Spark',            kind: 'remote', status: 'ok',  cpu: 12, mem: 44 },
+  { id: 'bspark2', name: 'bspark2',              kind: 'remote', status: 'idle',cpu: 0,  mem: 18 },
+];
+
+function ComputeSection() {
+  return (
+    <div>
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 16,
+      }}>
+        <div style={{
+          fontFamily: 'var(--font-mono)',
+          fontSize: 11,
+          color: 'var(--text-dim)',
+          letterSpacing: '0.14em',
+        }}>
+          REMOTE HOSTS
+        </div>
+        <button style={{
+          all: 'unset',
+          cursor: 'pointer',
+          fontFamily: 'var(--font-mono)',
+          fontSize: 10,
+          padding: '3px 10px',
+          border: '1px dashed var(--border)',
+          color: 'var(--text-dim)',
+        }}>
+          + add host
+        </button>
+      </div>
+      {SEED_COMPUTE_HOSTS.map((h) => {
+        const statusColor = h.status === 'ok' ? 'var(--ok)' : 'var(--text-dim)';
+        return (
+          <div key={h.id} style={{
+            display: 'grid',
+            gridTemplateColumns: '10px 1fr auto',
+            gap: 10,
+            padding: '10px 0',
+            borderBottom: '1px solid var(--border)',
+            alignItems: 'center',
+          }}>
+            <div style={{ width: 6, height: 6, borderRadius: '50%', background: statusColor }} />
+            <div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text)', marginBottom: 2 }}>
+                {h.name}
+              </div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-dim)' }}>
+                {h.kind} · CPU {h.cpu}% · MEM {h.mem}%
+              </div>
+            </div>
+            <button style={{
+              all: 'unset',
+              cursor: 'pointer',
+              fontFamily: 'var(--font-mono)',
+              fontSize: 10,
+              color: 'var(--text-dim)',
+              border: '1px solid var(--border)',
+              padding: '3px 8px',
+            }}>
+              edit
+            </button>
+          </div>
+        );
+      })}
+      <div style={{
+        marginTop: 16,
+        fontFamily: 'var(--font-mono)',
+        fontSize: 10,
+        color: 'var(--text-dim)',
+        lineHeight: 1.5,
+      }}>
+        Remote hosts are used as clone and compute targets in the new-project flow and by Spaceman when dispatching tasks.
+      </div>
+    </div>
+  );
+}
+
 function PlaceholderSection({ name }) {
   return (
     <div style={{
@@ -211,9 +357,12 @@ function PlaceholderSection({ name }) {
   );
 }
 
-export default function SettingsModal({ open, onClose, activeThemeId, onThemeChange, projects, activeProjectId }) {
-  const [section, setSection] = useState('appearance');
+export default function SettingsModal({ open, onClose, activeThemeId, onThemeChange, projects, activeProjectId, defaultSection }) {
+  const [section, setSection] = useState(defaultSection ?? 'appearance');
   const [spacemanProjectId, setSpacemanProjectId] = useState(activeProjectId ?? projects?.[0]?.id ?? 'forge');
+
+  // Update section when defaultSection changes (e.g. opened from Compute popover)
+  if (open && defaultSection && section !== defaultSection) setSection(defaultSection);
 
   if (!open) return null;
 
@@ -286,19 +435,12 @@ export default function SettingsModal({ open, onClose, activeThemeId, onThemeCha
 
         {/* Content pane */}
         <div style={{ flex: 1, padding: 24, overflowY: 'auto' }}>
-          {section === 'appearance' && (
-            <AppearanceSection activeThemeId={activeThemeId} onThemeChange={onThemeChange} />
-          )}
-          {section === 'spaceman' && (
-            <SpacemanSection
-              projects={projects ?? []}
-              activeProjectId={spacemanProjectId}
-              onProjectChange={setSpacemanProjectId}
-            />
-          )}
-          {!['appearance', 'spaceman'].includes(section) && (
-            <PlaceholderSection name={section} />
-          )}
+          {section === 'appearance'  && <AppearanceSection activeThemeId={activeThemeId} onThemeChange={onThemeChange} />}
+          {section === 'spaceman'    && <SpacemanSection projects={projects ?? []} activeProjectId={spacemanProjectId} onProjectChange={setSpacemanProjectId} />}
+          {section === 'editor'      && <KeybindingsSection />}
+          {section === 'compute'     && <ComputeSection />}
+          {section === 'integrations'&& <PlaceholderSection name="integrations" />}
+          {section === 'advanced'    && <PlaceholderSection name="advanced" />}
         </div>
 
         {/* Close button */}

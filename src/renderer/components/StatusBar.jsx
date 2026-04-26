@@ -1,6 +1,6 @@
 import StatusDot from './primitives/StatusDot.jsx';
 
-export default function StatusBar({ branch = 'main', projectName = 'dev-space', modified = 0 }) {
+export default function StatusBar({ branch = 'main', projectName = 'dev-space', modified = 0, onComputeClick }) {
   return (
     <div style={{
       height: 24, flexShrink: 0,
@@ -23,7 +23,19 @@ export default function StatusBar({ branch = 'main', projectName = 'dev-space', 
         </>
       )}
       <div style={{ flex: 1 }} />
-      <span style={{ color: 'var(--text-dim)' }}>DGX</span>
+      <button
+        onClick={onComputeClick}
+        style={{
+          all: 'unset',
+          cursor: 'pointer',
+          color: 'var(--accent)',
+          fontFamily: 'var(--font-mono)',
+          fontSize: 10.5,
+          letterSpacing: '0.04em',
+        }}
+      >
+        DGX
+      </button>
       <span style={{ color: 'var(--text-dim)' }}>·</span>
       <span>ln 1, col 1</span>
       <span style={{ color: 'var(--text-dim)' }}>·</span>
