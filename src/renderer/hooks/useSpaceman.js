@@ -9,8 +9,20 @@ export function useSpaceman({ projectId, projectName, branch, mode }) {
   const [error, setError] = useState(null);
   const cleanupRef = useRef([]);
 
+  // Stable storage key derived from mode + projectId
+  const storageKey = `ds.spaceman.chat.${mode}.${projectId ?? 'global'}`;
+
   useEffect(() => {
+    // Load persisted messages and check key status in parallel
+    const stored = localStorage.getItem(storageKey);
+    if (stored) {
+      try { setMessages(JSON.parse(stored)); } catch {}
+    }
+
     window.spaceman?.getKeyStatus().then(({ hasKey: hk }) => setHasKey(hk));
+  // storageKey intentionally not in deps — we only want to load once on mount
+  // (mode/projectId changes would require a page-level remount in practice)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Clean up IPC listeners on unmount
@@ -26,6 +38,8 @@ export function useSpaceman({ projectId, projectName, branch, mode }) {
     const userMsg = { role: 'user', content: text.trim() };
     const nextMessages = [...messages, userMsg];
     setMessages(nextMessages);
+    // Persist after adding user message
+    localStorage.setItem(storageKey, JSON.stringify(nextMessages));
     setStreaming(true);
     setStreamingText('');
 
@@ -42,10 +56,13 @@ export function useSpaceman({ projectId, projectName, branch, mode }) {
 
     const offDone = window.spaceman.onDone((stats) => {
       setLastStats(stats);
-      setMessages((prev) => [
-        ...prev,
-        { role: 'assistant', content: accumulated },
-      ]);
+      const assistantMsg = { role: 'assistant', content: accumulated };
+      setMessages((prev) => {
+        const updated = [...prev, assistantMsg];
+        // Persist after assistant message is complete
+        localStorage.setItem(storageKey, JSON.stringify(updated));
+        return updated;
+      });
       setStreamingText('');
       setStreaming(false);
       cleanupRef.current.forEach((fn) => fn?.());
@@ -78,13 +95,14 @@ export function useSpaceman({ projectId, projectName, branch, mode }) {
       setStreaming(false);
       setStreamingText('');
     }
-  }, [messages, streaming, hasKey, projectName, branch, mode]);
+  }, [messages, streaming, hasKey, projectName, branch, mode, storageKey]);
 
   const clearMessages = useCallback(() => {
     setMessages([]);
     setLastStats(null);
     setError(null);
-  }, []);
+    localStorage.removeItem(storageKey);
+  }, [storageKey]);
 
   const saveKey = useCallback(async (key) => {
     try {
