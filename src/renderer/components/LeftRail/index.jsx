@@ -3,6 +3,7 @@ import RailHeader from './RailHeader.jsx';
 import ProjectRow from './ProjectRow.jsx';
 import FileTree from './FileTree.jsx';
 import StatusDot from '../primitives/StatusDot.jsx';
+import NewProjectPicker from '../NewProjectPicker.jsx';
 
 export default function LeftRail({
   width,
@@ -13,6 +14,10 @@ export default function LeftRail({
   activeProjectId,
   onSelectProject,
   onFileOpen,
+  pickerOpen,
+  onNewProject,
+  onClosePicker,
+  onPickerSelect,
 }) {
   const activeProject = projects.find((p) => p.id === activeProjectId);
 
@@ -36,7 +41,12 @@ export default function LeftRail({
         transform: page === 'projects' ? 'translateX(0)' : 'translateX(-100%)',
         transition: 'transform 240ms cubic-bezier(.2,.8,.2,1)',
       }}>
-        <RailHeader label="PROJECTS" onAction={() => {}} />
+        <div style={{ position: 'relative' }}>
+          <RailHeader label="PROJECTS" onAction={onNewProject} />
+          {pickerOpen && (
+            <NewProjectPicker onSelect={onPickerSelect} onClose={onClosePicker} />
+          )}
+        </div>
         <div style={{ flex: 1, overflowY: 'auto', padding: '4px 0' }}>
           {projects.map((p) => (
             <ProjectRow

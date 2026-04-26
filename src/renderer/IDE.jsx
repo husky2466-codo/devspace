@@ -7,6 +7,8 @@ import CollapsedRail from './components/LeftRail/CollapsedRail.jsx';
 import Workspace from './components/Workspace/index.jsx';
 import SpacemanDrawer from './components/SpacemanDrawer/index.jsx';
 import SettingsModal from './components/SettingsModal.jsx';
+import NewProjectPicker from './components/NewProjectPicker.jsx';
+import NewProjectForm from './components/NewProjectForm.jsx';
 import { SEED_PROJECTS } from './data/seedProjects.js';
 import { SEED_BY_PROJECT, makeProjectState, makeTerminal } from './data/seedTerminals.js';
 import { SEED_SPACEMAN, makeSpacemanState } from './data/seedSpaceman.js';
@@ -30,8 +32,12 @@ export default function IDE() {
   const [rightWidth, setRightWidth]         = useState(() => loadLayout().rightWidth ?? 340);
   const [railPage, setRailPage]             = useState(() => loadLayout().railPage ?? 'projects');
 
-  const [projects]        = useState(SEED_PROJECTS);
+  const [projects, setProjects]   = useState(SEED_PROJECTS);
   const [activeProjectId, setActiveProjectId] = useState('forge');
+
+  // New-project flow
+  const [pickerOpen, setPickerOpen]       = useState(false);
+  const [newProjVariant, setNewProjVariant] = useState(null);
 
   // Per-project workspace state — each slice: { terminals, activeTermId, finishedIds, editorFile }
   const [byProject, setByProject] = useState(SEED_BY_PROJECT);
@@ -143,6 +149,24 @@ export default function IDE() {
     setRightWidth(340);
   };
 
+  const handleNewProjectSelect = (variant) => {
+    setNewProjVariant(variant);
+    setPickerOpen(false);
+  };
+
+  const handleCreateProject = (proj) => {
+    setProjects((prev) => [...prev, proj]);
+    setByProject((prev) => ({ ...prev, [proj.id]: makeProjectState() }));
+    setSpaceman((prev) => ({ ...prev, [proj.id]: makeSpacemanState() }));
+    setActiveProjectId(proj.id);
+    setNewProjVariant(null);
+    setRailPage('files');
+  };
+
+  const handleCancelNewProject = () => {
+    setNewProjVariant(null);
+  };
+
   const handleModeChange = (newMode) => {
     setSpacemanMode(newMode);
     if (newMode === 'global') {
@@ -200,19 +224,31 @@ export default function IDE() {
             activeProjectId={activeProjectId}
             onSelectProject={handleSelectProject}
             onFileOpen={handleFileOpen}
+            pickerOpen={pickerOpen}
+            onNewProject={() => setPickerOpen((o) => !o)}
+            onClosePicker={() => setPickerOpen(false)}
+            onPickerSelect={handleNewProjectSelect}
           />
         )}
 
-        <Workspace
-          terminals={terminals}
-          activeTermId={activeTermId}
-          finishedIds={finishedIds}
-          onSelectTerm={handleSelectTerm}
-          onCloseTerm={handleCloseTerm}
-          onSpawnTerm={handleSpawnTerm}
-          onAcknowledge={handleAcknowledge}
-          onPromptSubmit={() => {}}
-        />
+        {newProjVariant ? (
+          <NewProjectForm
+            variant={newProjVariant}
+            onCancel={handleCancelNewProject}
+            onCreate={handleCreateProject}
+          />
+        ) : (
+          <Workspace
+            terminals={terminals}
+            activeTermId={activeTermId}
+            finishedIds={finishedIds}
+            onSelectTerm={handleSelectTerm}
+            onCloseTerm={handleCloseTerm}
+            onSpawnTerm={handleSpawnTerm}
+            onAcknowledge={handleAcknowledge}
+            onPromptSubmit={() => {}}
+          />
+        )}
 
         {!rightCollapsed ? (
           <SpacemanDrawer
