@@ -26,6 +26,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.once(channel, () => cb());
     return () => ipcRenderer.removeAllListeners(channel);
   },
+  readFile:  (filePath) => ipcRenderer.invoke('fs:read-file', filePath),
+  writeFile: (filePath, content) => ipcRenderer.invoke('fs:write-file', filePath, content),
 });
 
 contextBridge.exposeInMainWorld('spaceman', {

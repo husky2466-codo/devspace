@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import Editor from '@monaco-editor/react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import StatusDot from '../primitives/StatusDot.jsx';
 
 function ToolBtn({ label, title, active, accent, onClick }) {
@@ -43,104 +44,84 @@ function GuardBtn({ label, primary, onClick }) {
   );
 }
 
-function CodeArea({ file, ghost, ghostAccepted, query }) {
-  const lines = [
-    { n: 1,  t: "import React, { useState, useRef } from 'react';" },
-    {
-      n: 2,
-      t: ghost && !ghostAccepted
-        ? "import { themeVars } from './tokens';"
-        : "import { useBlink } from '../hooks/useBlink';",
-      kind: ghostAccepted ? 'accepted' : 'normal',
-    },
-    { n: 3,  t: '' },
-    { n: 4,  t: 'export default function Terminal({ agent, active, onClose }) {' },
-    {
-      n: 5,
-      t: ghost && !ghostAccepted
-        ? '  const [caret, setCaret] = useState(true);'
-        : '  const caret = useBlink(true);',
-      kind: ghost && !ghostAccepted ? 'rem' : ghostAccepted ? 'accepted' : 'normal',
-    },
-    { n: 6,  t: '  const ref = useRef(null);' },
-    { n: 7,  t: '' },
-    { n: 8,  t: '  useEffect(() => {' },
-    { n: 9,  t: '    if (!active) return;', err: file?.errors?.[0] },
-    { n: 10, t: '    bridge.subscribe(agent.id, setLines);', active: true },
-    { n: 11, t: '  }, [active, agent.id]);' },
-    { n: 12, t: '' },
-    { n: 13, t: '  return (' },
-    { n: 14, t: "    <div ref={ref} style={{ height: '100%' }}>" },
-    { n: 15, t: '      <Header agent={agent} onClose={onClose} />' },
-    { n: 16, t: '      <Body lines={lines} />' },
-    { n: 17, t: '    </div>' },
-    { n: 18, t: '  );' },
-    { n: 19, t: '}' },
-  ];
+function CodeArea({ file, onDirtyChange }) {
+  const [content, setContent] = useState('');
+  const [loading, setLoading] = useState(true);
+  const editorRef = useRef(null);
+
+  // Load file content when file changes
+  useEffect(() => {
+    if (!file?.path) { setContent(''); setLoading(false); return; }
+    setLoading(true);
+    window.electronAPI?.readFile(file.path).then((res) => {
+      if (res?.ok) setContent(res.content);
+      else setContent(`// Error reading file: ${res?.error}`);
+      setLoading(false);
+    }).catch(() => {
+      setContent('// Could not read file');
+      setLoading(false);
+    });
+  }, [file?.path]);
+
+  const handleChange = useCallback((value) => {
+    setContent(value ?? '');
+    onDirtyChange?.(true);
+  }, [onDirtyChange]);
+
+  const handleMount = useCallback((editor) => {
+    editorRef.current = editor;
+    editor.focus();
+  }, []);
+
+  if (loading) {
+    return (
+      <div style={{ padding: 20, fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-dim)' }}>
+        LOADING...
+      </div>
+    );
+  }
+
+  // Detect language from file extension
+  const ext = file?.name?.split('.').pop()?.toLowerCase() ?? '';
+  const langMap = {
+    js: 'javascript', jsx: 'javascript', ts: 'typescript', tsx: 'typescript',
+    py: 'python', rb: 'ruby', rs: 'rust', go: 'go', java: 'java',
+    css: 'css', scss: 'scss', html: 'html', json: 'json', md: 'markdown',
+    yml: 'yaml', yaml: 'yaml', sh: 'shell', bash: 'shell', cjs: 'javascript', mjs: 'javascript',
+  };
+  const language = langMap[ext] ?? 'plaintext';
 
   return (
-    <>
-      {lines.map((l, i) => {
-        const isRem = l.kind === 'rem';
-        const isAccepted = l.kind === 'accepted';
-        const hasErr = !!l.err;
-        const matchIdx = query ? l.t.toLowerCase().indexOf(query.toLowerCase()) : -1;
-        return (
-          <div key={i} style={{
-            display: 'flex',
-            gap: 0,
-            fontFamily: 'var(--font-mono)',
-            fontSize: 11,
-            lineHeight: 1.7,
-            background: isRem
-              ? 'color-mix(in srgb, var(--err) 7%, transparent)'
-              : isAccepted
-              ? 'var(--accent-soft)'
-              : hasErr
-              ? 'color-mix(in srgb, var(--err) 5%, transparent)'
-              : l.active
-              ? 'var(--accent-soft)'
-              : 'transparent',
-            borderLeft: isAccepted || l.active
-              ? '2px solid var(--accent)'
-              : isRem
-              ? '2px solid color-mix(in srgb, var(--err) 50%, transparent)'
-              : '2px solid transparent',
-          }}>
-            <span style={{
-              width: 16, textAlign: 'center', flexShrink: 0,
-              color: hasErr ? 'var(--err)' : 'transparent',
-              fontSize: 9, paddingTop: 3,
-            }}>
-              {hasErr ? '✗' : ''}
-            </span>
-            <span style={{
-              width: 24, textAlign: 'right',
-              color: 'var(--text-dim)', flexShrink: 0, paddingRight: 8,
-            }}>
-              {l.n}
-            </span>
-            <span style={{
-              whiteSpace: 'pre',
-              color: isRem ? 'var(--err)' : isAccepted ? 'var(--text)' : 'var(--text-muted)',
-              textDecoration: isRem ? 'line-through' : 'none',
-              paddingRight: 12,
-              flex: 1,
-            }}>
-              {matchIdx >= 0 ? (
-                <>
-                  {l.t.slice(0, matchIdx)}
-                  <span style={{ background: 'color-mix(in srgb, var(--warn) 45%, transparent)', borderRadius: 2, padding: '0 1px' }}>
-                    {l.t.slice(matchIdx, matchIdx + query.length)}
-                  </span>
-                  {l.t.slice(matchIdx + query.length)}
-                </>
-              ) : (l.t || ' ')}
-            </span>
-          </div>
-        );
-      })}
-    </>
+    <Editor
+      height="100%"
+      language={language}
+      value={content}
+      onChange={handleChange}
+      onMount={handleMount}
+      theme="vs-dark"
+      options={{
+        fontSize: 12,
+        fontFamily: 'JetBrains Mono, monospace',
+        lineHeight: 19,
+        minimap: { enabled: false },
+        scrollBeyondLastLine: false,
+        wordWrap: 'off',
+        renderLineHighlight: 'line',
+        cursorBlinking: 'smooth',
+        smoothScrolling: true,
+        padding: { top: 8 },
+        overviewRulerLanes: 0,
+        hideCursorInOverviewRuler: true,
+        scrollbar: { verticalScrollbarSize: 6, horizontalScrollbarSize: 6 },
+        folding: true,
+        lineNumbers: 'on',
+        renderWhitespace: 'none',
+        tabSize: 2,
+        insertSpaces: true,
+        bracketPairColorization: { enabled: true },
+        guides: { bracketPairs: false },
+      }}
+    />
   );
 }
 
@@ -192,12 +173,14 @@ export default function EditorTab({ file, onClose }) {
   const [ghost, setGhost] = useState(file?.ghost ?? false);
   const [ghostAccepted, setGhostAccepted] = useState(false);
   const [dirtyGuard, setDirtyGuard] = useState(null);
+  const [isDirty, setIsDirty] = useState(false);
 
   useEffect(() => {
     setPanelOpen(!!(file?.errors?.length));
     setGhost(file?.ghost ?? false);
     setGhostAccepted(false);
     setDirtyGuard(null);
+    setIsDirty(false);
   }, [file]);
 
   useEffect(() => {
@@ -214,6 +197,7 @@ export default function EditorTab({ file, onClose }) {
 
   const errors = file.errors ?? [];
   const hasErrors = errors.filter((e) => e.sev === 'err').length > 0;
+  const dirty = isDirty || file.dirty;
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
@@ -244,7 +228,7 @@ export default function EditorTab({ file, onClose }) {
           <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {file.name}
           </span>
-          {file.dirty && <span style={{ color: 'var(--warn)', fontSize: 8, flexShrink: 0 }}>●</span>}
+          {dirty && <span style={{ color: 'var(--warn)', fontSize: 8, flexShrink: 0 }}>●</span>}
           {hasErrors && (
             <span style={{
               color: 'var(--err)', fontSize: 8,
@@ -255,7 +239,7 @@ export default function EditorTab({ file, onClose }) {
           )}
           <span style={{ flex: 1 }} />
           <span
-            onClick={() => file.dirty ? setDirtyGuard('closing') : onClose?.()}
+            onClick={() => dirty ? setDirtyGuard('closing') : onClose?.()}
             style={{ color: 'var(--text-dim)', fontSize: 10, cursor: 'pointer', flexShrink: 0 }}
           >
             ×
@@ -294,16 +278,10 @@ export default function EditorTab({ file, onClose }) {
             borderTop: '1px solid var(--border)',
           }}>
             <GuardBtn primary label="⇧⌘S  SAVE" onClick={() => { setDirtyGuard(null); onClose?.(); }} />
-            <GuardBtn label="DISCARD" onClick={() => { setDirtyGuard(null); onClose?.(); }} />
+            <GuardBtn label="DISCARD" onClick={() => { setIsDirty(false); setDirtyGuard(null); onClose?.(); }} />
             <GuardBtn label="KEEP OPEN" onClick={() => setDirtyGuard(null)} />
             <span style={{ flex: 1 }} />
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-dim)', alignSelf: 'center' }}>esc</span>
-          </div>
-          <div style={{ padding: '6px 12px', fontFamily: 'var(--font-mono)', fontSize: 10, lineHeight: 1.45 }}>
-            <div style={{ color: 'var(--text-dim)', fontSize: 9, letterSpacing: '0.1em', marginBottom: 3 }}>UNSAVED DIFF</div>
-            <div style={{ color: 'var(--ok)' }}>{"+ import { useBlink } from '../hooks/useBlink';"}</div>
-            <div style={{ color: 'var(--err)', textDecoration: 'line-through', opacity: 0.7 }}>- const [caret, setCaret] = useState(true);</div>
-            <div style={{ color: 'var(--ok)' }}>+ const caret = useBlink(true);</div>
           </div>
         </div>
       )}
@@ -415,13 +393,11 @@ export default function EditorTab({ file, onClose }) {
         </div>
       )}
 
-      {/* Code area */}
-      <div style={{ flex: 1, minHeight: 0, overflow: 'auto', padding: '8px 0' }}>
+      {/* Code area — Monaco Editor */}
+      <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
         <CodeArea
           file={file}
-          ghost={ghost}
-          ghostAccepted={ghostAccepted}
-          query={findOpen ? query : null}
+          onDirtyChange={setIsDirty}
         />
       </div>
 
@@ -502,8 +478,8 @@ export default function EditorTab({ file, onClose }) {
         color: 'var(--text-dim)',
         letterSpacing: '0.04em',
       }}>
-        <span>JSX · spaces 2</span>
-        {file.dirty && (
+        <span>{file.name?.split('.').pop()?.toUpperCase() ?? 'TXT'} · spaces 2</span>
+        {dirty && (
           <>
             <span>·</span>
             <span style={{ color: 'var(--warn)' }}>◉ unsaved</span>
