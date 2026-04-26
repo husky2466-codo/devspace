@@ -29,6 +29,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
   readFile:  (filePath) => ipcRenderer.invoke('fs:read-file', filePath),
   writeFile: (filePath, content) => ipcRenderer.invoke('fs:write-file', filePath, content),
   createProject: (opts) => ipcRenderer.invoke('project:create', opts),
+  setDocumentEdited: (isDirty) => ipcRenderer.invoke('window:set-document-edited', isDirty),
+  onMenuAction: (cb) => {
+    const channels = [
+      'menu:new-terminal', 'menu:close-terminal', 'menu:find',
+      'menu:toggle-rail', 'menu:toggle-spaceman', 'menu:open-settings',
+    ];
+    channels.forEach((ch) => ipcRenderer.on(ch, () => cb(ch)));
+    return () => channels.forEach((ch) => ipcRenderer.removeAllListeners(ch));
+  },
 });
 
 contextBridge.exposeInMainWorld('spaceman', {

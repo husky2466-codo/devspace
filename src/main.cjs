@@ -380,10 +380,18 @@ ipcMain.handle('project:create', async (_e, { variant, fields }) => {
   }
 });
 
+ipcMain.handle('window:set-document-edited', (_e, isDirty) => {
+  if (win && process.platform === 'darwin') {
+    win.setDocumentEdited(isDirty);
+  }
+});
+
 // ── Window + app ──────────────────────────────────────────────────────────────
 
+let win = null;
+
 function createWindow() {
-  const win = new BrowserWindow({
+  win = new BrowserWindow({
     width: 1400,
     height: 900,
     minWidth: 900,
@@ -413,66 +421,85 @@ function createWindow() {
     win.loadFile(path.join(__dirname, '../dist/renderer/index.html'));
   }
 
-  buildMenu();
+  buildMenu(win);
 }
 
-function buildMenu() {
+function buildMenu(mainWin) {
+  const isMac = process.platform === 'darwin';
+  const send = (ch) => () => mainWin?.webContents.send(ch);
   const template = [
-    {
-      label: 'Dev-Space',
+    ...(isMac ? [{
+      label: app.name,
       submenu: [
-        { label: 'About Dev-Space.ai', role: 'about' },
+        { role: 'about' },
         { type: 'separator' },
-        { label: 'Preferences', accelerator: 'Cmd+,', click: () => {} },
+        { role: 'services' },
         { type: 'separator' },
-        { label: 'Hide Dev-Space', role: 'hide' },
-        { label: 'Quit', role: 'quit' },
+        { role: 'hide' },
+        { role: 'hideOthers' },
+        { role: 'unhide' },
+        { type: 'separator' },
+        { role: 'quit' },
       ],
-    },
+    }] : []),
     {
       label: 'File',
       submenu: [
-        { label: 'New Project', accelerator: 'Cmd+N', click: () => {} },
-        { label: 'Open', accelerator: 'Cmd+O', click: () => {} },
-        { label: 'Close', accelerator: 'Cmd+W', role: 'close' },
+        {
+          label: 'New Terminal',
+          accelerator: 'CmdOrCtrl+T',
+          click: send('menu:new-terminal'),
+        },
+        {
+          label: 'Close Terminal',
+          accelerator: 'CmdOrCtrl+W',
+          click: send('menu:close-terminal'),
+        },
+        { type: 'separator' },
+        isMac ? { role: 'close' } : { role: 'quit' },
+      ],
+    },
+    {
+      label: 'Edit',
+      submenu: [
+        { role: 'undo' },
+        { role: 'redo' },
+        { type: 'separator' },
+        { role: 'cut' },
+        { role: 'copy' },
+        { role: 'paste' },
+        { role: 'selectAll' },
+        { type: 'separator' },
+        {
+          label: 'Find',
+          accelerator: 'CmdOrCtrl+F',
+          click: send('menu:find'),
+        },
       ],
     },
     {
       label: 'View',
       submenu: [
-        { label: 'Terminal Theme', accelerator: 'Ctrl+1', click: () => {} },
-        { label: 'Graphite Theme', accelerator: 'Ctrl+2', click: () => {} },
-        { label: 'Paper Theme', accelerator: 'Ctrl+3', click: () => {} },
+        {
+          label: 'Toggle Left Rail',
+          accelerator: 'CmdOrCtrl+\\',
+          click: send('menu:toggle-rail'),
+        },
+        {
+          label: 'Toggle Spaceman',
+          accelerator: 'CmdOrCtrl+/',
+          click: send('menu:toggle-spaceman'),
+        },
         { type: 'separator' },
-        { label: 'Toggle Left Rail', accelerator: 'Cmd+B', click: () => {} },
-        { label: 'Toggle Right Drawer', accelerator: 'Cmd+J', click: () => {} },
+        { role: 'reload' },
+        { role: 'forceReload' },
+        { role: 'toggleDevTools' },
         { type: 'separator' },
-        { label: 'Zoom In', role: 'zoomIn' },
-        { label: 'Zoom Out', role: 'zoomOut' },
-        { label: 'Reset Zoom', role: 'resetZoom' },
+        { role: 'resetZoom' },
+        { role: 'zoomIn' },
+        { role: 'zoomOut' },
         { type: 'separator' },
         { role: 'togglefullscreen' },
-      ],
-    },
-    {
-      label: 'Session',
-      submenu: [
-        { label: 'New Terminal', accelerator: 'Cmd+T', click: () => {} },
-        { label: 'Close Terminal', accelerator: 'Ctrl+W', click: () => {} },
-        { type: 'separator' },
-        { label: 'Next Terminal', accelerator: 'Cmd+]', click: () => {} },
-        { label: 'Previous Terminal', accelerator: 'Cmd+[', click: () => {} },
-        { type: 'separator' },
-        { label: 'Rename', accelerator: 'F2', click: () => {} },
-      ],
-    },
-    {
-      label: 'Scripts',
-      submenu: [
-        { label: 'Run Script', accelerator: 'Cmd+R', click: () => {} },
-        { label: 'Run Last Script', accelerator: 'Shift+Cmd+R', click: () => {} },
-        { type: 'separator' },
-        { label: 'Edit Scripts', click: () => {} },
       ],
     },
     {
@@ -480,21 +507,20 @@ function buildMenu() {
       submenu: [
         { role: 'minimize' },
         { role: 'zoom' },
-        { type: 'separator' },
-        { label: 'Project Switcher', accelerator: 'Ctrl+Cmd+P', click: () => {} },
-        { type: 'separator' },
-        { role: 'front' },
+        ...(isMac ? [{ type: 'separator' }, { role: 'front' }] : []),
       ],
     },
     {
-      label: 'Help',
+      label: 'Settings',
       submenu: [
-        { label: 'Documentation', click: () => {} },
-        { label: 'Keyboard Shortcuts', click: () => {} },
+        {
+          label: 'Preferences…',
+          accelerator: 'CmdOrCtrl+,',
+          click: send('menu:open-settings'),
+        },
       ],
     },
   ];
-
   Menu.setApplicationMenu(Menu.buildFromTemplate(template));
 }
 
