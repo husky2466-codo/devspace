@@ -62,11 +62,43 @@ export default function IDE() {
     }));
   }, [leftCollapsed, rightCollapsed, leftWidth, rightWidth, railPage]);
 
+  // File tree: read + watch when active project changes
+  useEffect(() => {
+    if (!activeProjectId) return;
+    const project = projects.find((p) => p.id === activeProjectId);
+    const rootPath = project?._fields?.path;
+    if (!rootPath) return;
+
+    window.electronAPI?.readTree(rootPath).then((tree) => {
+      setByProject((prev) => {
+        const cur = prev[activeProjectId] ?? makeProjectState();
+        return { ...prev, [activeProjectId]: { ...cur, files: tree } };
+      });
+    });
+
+    window.electronAPI?.watchProject(activeProjectId, rootPath);
+
+    return () => {
+      window.electronAPI?.unwatchProject(activeProjectId);
+    };
+  }, [activeProjectId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Listen for live tree updates from chokidar
+  useEffect(() => {
+    const cleanup = window.electronAPI?.onTreeUpdate(({ projectId, tree }) => {
+      setByProject((prev) => {
+        const cur = prev[projectId] ?? makeProjectState();
+        return { ...prev, [projectId]: { ...cur, files: tree } };
+      });
+    });
+    return () => cleanup?.();
+  }, []);
+
   const activeProject = projects.find((p) => p.id === activeProjectId) ?? null;
 
   // Active project workspace slice
   const proj = byProject[activeProjectId] ?? makeProjectState();
-  const { terminals, activeTermId, finishedIds, editorFile } = proj;
+  const { terminals, activeTermId, finishedIds, editorFile, files } = proj;
 
   const setProj = (updater) => {
     setByProject((prev) => {
@@ -225,6 +257,7 @@ export default function IDE() {
             onPageChange={setRailPage}
             projects={projects}
             activeProjectId={activeProjectId}
+            activeFiles={files ?? []}
             onSelectProject={handleSelectProject}
             onFileOpen={handleFileOpen}
             pickerOpen={pickerOpen}

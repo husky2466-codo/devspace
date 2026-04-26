@@ -5,6 +5,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
   browseFolder:    (defaultPath) => ipcRenderer.invoke('dialog:browse-folder', defaultPath),
   browseFile:      (opts)        => ipcRenderer.invoke('dialog:browse-file', opts),
   inspectFolder:   (folderPath)  => ipcRenderer.invoke('project:inspect-folder', folderPath),
+  readTree:        (rootPath)    => ipcRenderer.invoke('fs:read-tree', rootPath),
+  watchProject:    (projectId, rootPath) => ipcRenderer.invoke('fs:watch', { projectId, rootPath }),
+  unwatchProject:  (projectId)   => ipcRenderer.invoke('fs:unwatch', projectId),
+  onTreeUpdate:    (cb) => {
+    ipcRenderer.on('fs:tree-update', (_e, payload) => cb(payload));
+    return () => ipcRenderer.removeAllListeners('fs:tree-update');
+  },
 });
 
 contextBridge.exposeInMainWorld('spaceman', {

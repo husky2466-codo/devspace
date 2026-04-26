@@ -1,5 +1,6 @@
 const { app, BrowserWindow, Menu, ipcMain, dialog } = require('electron');
 const path = require('path');
+const fs = require('fs');
 const { execFile } = require('child_process');
 
 const isDev = process.env.NODE_ENV !== 'production';
@@ -89,6 +90,116 @@ ipcMain.handle('project:inspect-folder', async (_event, folderPath) => {
     remoteUrl: remoteUrl || '',
     isGit,
   };
+});
+
+// ── File tree ─────────────────────────────────────────────────────────────────
+
+const ALWAYS_IGNORE = [
+  '.git', 'node_modules', '.DS_Store', 'Thumbs.db',
+  'dist', 'build', 'out', '.next', '.nuxt', '__pycache__',
+  '.venv', 'venv', '.tox', 'coverage', '.nyc_output',
+  '*.pyc', '*.pyo', '*.class', '*.o', '*.obj',
+];
+
+function loadIgnore(rootPath) {
+  let ig = null;
+  try {
+    const ignoreLib = require('ignore');
+    ig = ignoreLib.default ? ignoreLib.default() : ignoreLib();
+    ig.add(ALWAYS_IGNORE);
+    const gitignorePath = path.join(rootPath, '.gitignore');
+    if (fs.existsSync(gitignorePath)) {
+      ig.add(fs.readFileSync(gitignorePath, 'utf8'));
+    }
+  } catch {}
+  return ig;
+}
+
+function readTree(dirPath, rootPath, ig, depth = 0) {
+  if (depth > 8) return [];
+  let entries;
+  try {
+    entries = fs.readdirSync(dirPath, { withFileTypes: true });
+  } catch {
+    return [];
+  }
+
+  const nodes = [];
+  for (const entry of entries) {
+    const rel = path.relative(rootPath, path.join(dirPath, entry.name));
+    if (ig && ig.ignores(rel)) continue;
+
+    if (entry.isDirectory()) {
+      const children = readTree(path.join(dirPath, entry.name), rootPath, ig, depth + 1);
+      nodes.push({ name: entry.name, path: path.join(dirPath, entry.name), children });
+    } else if (entry.isFile()) {
+      nodes.push({ name: entry.name, path: path.join(dirPath, entry.name) });
+    }
+  }
+
+  // Dirs first, then files, both sorted alphabetically
+  nodes.sort((a, b) => {
+    const aDir = !!a.children;
+    const bDir = !!b.children;
+    if (aDir !== bDir) return aDir ? -1 : 1;
+    return a.name.localeCompare(b.name);
+  });
+
+  return nodes;
+}
+
+ipcMain.handle('fs:read-tree', (_event, rootPath) => {
+  if (!rootPath || !fs.existsSync(rootPath)) return [];
+  const ig = loadIgnore(rootPath);
+  return readTree(rootPath, rootPath, ig);
+});
+
+// Per-project chokidar watchers: projectId → watcher
+const watchers = new Map();
+
+ipcMain.handle('fs:watch', (event, { projectId, rootPath }) => {
+  if (!rootPath || !fs.existsSync(rootPath)) return;
+  if (watchers.has(projectId)) {
+    watchers.get(projectId).close();
+    watchers.delete(projectId);
+  }
+
+  const chokidar = require('chokidar');
+  const ig = loadIgnore(rootPath);
+
+  const watcher = chokidar.watch(rootPath, {
+    ignored: (filePath) => {
+      if (filePath === rootPath) return false;
+      const rel = path.relative(rootPath, filePath);
+      return ig ? ig.ignores(rel) : false;
+    },
+    ignoreInitial: true,
+    depth: 8,
+    usePolling: false,
+  });
+
+  let debounce = null;
+  const sendUpdate = () => {
+    clearTimeout(debounce);
+    debounce = setTimeout(() => {
+      if (!event.sender.isDestroyed()) {
+        const tree = readTree(rootPath, rootPath, ig);
+        event.sender.send('fs:tree-update', { projectId, tree });
+      }
+    }, 300);
+  };
+
+  watcher.on('add', sendUpdate).on('unlink', sendUpdate)
+         .on('addDir', sendUpdate).on('unlinkDir', sendUpdate);
+
+  watchers.set(projectId, watcher);
+});
+
+ipcMain.handle('fs:unwatch', (_event, projectId) => {
+  if (watchers.has(projectId)) {
+    watchers.get(projectId).close();
+    watchers.delete(projectId);
+  }
 });
 
 // ── IPC handlers ──────────────────────────────────────────────────────────────

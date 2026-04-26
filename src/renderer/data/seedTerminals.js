@@ -1,5 +1,5 @@
 export function makeProjectState() {
-  return { terminals: [], activeTermId: null, finishedIds: new Set(), editorFile: null };
+  return { terminals: [], activeTermId: null, finishedIds: new Set(), editorFile: null, files: [] };
 }
 
 export const SEED_BY_PROJECT = {};
