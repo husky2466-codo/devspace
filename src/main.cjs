@@ -1,7 +1,112 @@
-const { app, BrowserWindow, Menu } = require('electron');
+const { app, BrowserWindow, Menu, ipcMain } = require('electron');
 const path = require('path');
 
 const isDev = process.env.NODE_ENV !== 'production';
+
+const KEYCHAIN_SERVICE = 'dev-space-ai';
+const KEYCHAIN_ACCOUNT_ANTHROPIC = 'anthropic-api-key';
+
+// Lazy-load keytar and Anthropic — both are native/ESM, handle gracefully
+let keytar = null;
+let Anthropic = null;
+
+async function getKeytar() {
+  if (!keytar) keytar = require('keytar');
+  return keytar;
+}
+
+async function getAnthropic() {
+  if (!Anthropic) {
+    const mod = await import('@anthropic-ai/sdk');
+    Anthropic = mod.default;
+  }
+  return Anthropic;
+}
+
+// ── Keychain helpers ──────────────────────────────────────────────────────────
+
+async function getApiKey() {
+  const kt = await getKeytar();
+  return kt.getPassword(KEYCHAIN_SERVICE, KEYCHAIN_ACCOUNT_ANTHROPIC);
+}
+
+async function setApiKey(key) {
+  const kt = await getKeytar();
+  await kt.setPassword(KEYCHAIN_SERVICE, KEYCHAIN_ACCOUNT_ANTHROPIC, key);
+}
+
+async function deleteApiKey() {
+  const kt = await getKeytar();
+  return kt.deletePassword(KEYCHAIN_SERVICE, KEYCHAIN_ACCOUNT_ANTHROPIC);
+}
+
+// ── IPC handlers ──────────────────────────────────────────────────────────────
+
+// Check whether a key is stored
+ipcMain.handle('spaceman:key-status', async () => {
+  const key = await getApiKey();
+  return { hasKey: !!key };
+});
+
+// Save a key to keychain (called from Settings)
+ipcMain.handle('spaceman:set-key', async (_event, key) => {
+  if (!key || typeof key !== 'string' || !key.startsWith('sk-ant-')) {
+    throw new Error('Invalid API key format');
+  }
+  await setApiKey(key.trim());
+  return { ok: true };
+});
+
+// Delete stored key
+ipcMain.handle('spaceman:delete-key', async () => {
+  await deleteApiKey();
+  return { ok: true };
+});
+
+// Stream a chat message — tokens come back as ipcMain events on the sender
+ipcMain.handle('spaceman:chat', async (event, { messages, model, systemPrompt }) => {
+  const key = await getApiKey();
+  if (!key) throw new Error('NO_KEY');
+
+  const AnthropicClass = await getAnthropic();
+  const client = new AnthropicClass({ apiKey: key });
+
+  const senderContents = event.sender;
+
+  try {
+    const stream = await client.messages.stream({
+      model: model || 'claude-sonnet-4-6',
+      max_tokens: 4096,
+      system: systemPrompt || 'You are Spaceman, a senior engineering AI working inside Dev-Space.ai. Be concise, precise, and practical.',
+      messages,
+    });
+
+    for await (const chunk of stream) {
+      if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
+        if (!senderContents.isDestroyed()) {
+          senderContents.send('spaceman:token', chunk.delta.text);
+        }
+      }
+    }
+
+    const final = await stream.finalMessage();
+    if (!senderContents.isDestroyed()) {
+      senderContents.send('spaceman:done', {
+        inputTokens: final.usage.input_tokens,
+        outputTokens: final.usage.output_tokens,
+        stopReason: final.stop_reason,
+      });
+    }
+    return { ok: true };
+  } catch (err) {
+    if (!senderContents.isDestroyed()) {
+      senderContents.send('spaceman:error', err.message);
+    }
+    throw err;
+  }
+});
+
+// ── Window + app ──────────────────────────────────────────────────────────────
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -21,7 +126,14 @@ function createWindow() {
   });
 
   if (isDev) {
-    win.loadURL('http://localhost:5173');
+    // Find whichever vite port is active
+    const ports = [5173, 5174, 5175, 5176, 5177, 5178, 5179, 5180];
+    const tryLoad = (i) => {
+      if (i >= ports.length) { win.loadURL('http://localhost:5173'); return; }
+      const url = `http://localhost:${ports[i]}`;
+      win.loadURL(url).catch(() => tryLoad(i + 1));
+    };
+    tryLoad(0);
   } else {
     win.loadFile(path.join(__dirname, '../dist/renderer/index.html'));
   }
@@ -115,8 +227,4 @@ app.whenReady().then(createWindow);
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
-});
-
-app.on('activate', () => {
-  if (BrowserWindow.getAllWindows().length === 0) createWindow();
 });

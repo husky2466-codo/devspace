@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import ResizeHandle from '../primitives/ResizeHandle.jsx';
 import DrawerHeader from './DrawerHeader.jsx';
 import DrawerTabBar from './DrawerTabBar.jsx';
@@ -19,10 +20,17 @@ export default function SpacemanDrawer({
   onCloseEditor,
   projectName,
   branch,
-  onPromptSubmit,
   onOpenSettings,
 }) {
   const tab = spaceman?.tab ?? 'chat';
+  // ChatTab registers its sendMessage here; PromptStrip calls it
+  const promptActionRef = useRef(null);
+
+  const handlePromptSubmit = (text) => {
+    if (promptActionRef.current) {
+      promptActionRef.current(text);
+    }
+  };
 
   return (
     <div style={{
@@ -52,18 +60,25 @@ export default function SpacemanDrawer({
       />
 
       <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-        {tab === 'chat'    && <ChatTab    messages={spaceman?.chat}          mode={mode} />}
+        {tab === 'chat'    && (
+          <ChatTab
+            mode={mode}
+            projectName={projectName}
+            branch={branch}
+            onPromptRef={promptActionRef}
+          />
+        )}
         {tab === 'browser' && mode === 'project' && <BrowserTab items={spaceman?.browser?.items ?? []} />}
-        {tab === 'editor'  && <EditorTab  file={editorFile}                  onClose={onCloseEditor} />}
-        {tab === 'chain'   && <ChainTab   chain={spaceman?.chain}            mode={mode} />}
-        {tab === 'memory'  && <MemoryTab  mems={spaceman?.memory}            mode={mode} />}
+        {tab === 'editor'  && <EditorTab  file={editorFile} onClose={onCloseEditor} />}
+        {tab === 'chain'   && <ChainTab   chain={spaceman?.chain} mode={mode} />}
+        {tab === 'memory'  && <MemoryTab  mems={spaceman?.memory} mode={mode} />}
       </div>
 
       {(tab === 'chat' || tab === 'editor') && (
         <PromptStrip
           mode={mode}
           activeTab={tab}
-          onSubmit={onPromptSubmit}
+          onSubmit={handlePromptSubmit}
         />
       )}
     </div>
