@@ -1,4 +1,3 @@
-import { useRef } from 'react';
 import ResizeHandle from '../primitives/ResizeHandle.jsx';
 import DrawerHeader from './DrawerHeader.jsx';
 import DrawerTabBar from './DrawerTabBar.jsx';
@@ -7,7 +6,6 @@ import BrowserTab from './BrowserTab.jsx';
 import EditorTab from './EditorTab.jsx';
 import ChainTab from './ChainTab.jsx';
 import MemoryTab from './MemoryTab.jsx';
-import PromptStrip from './PromptStrip.jsx';
 
 export default function SpacemanDrawer({
   width,
@@ -21,16 +19,9 @@ export default function SpacemanDrawer({
   projectName,
   branch,
   onOpenSettings,
+  promptActionRef,
 }) {
   const tab = spaceman?.tab ?? 'chat';
-  // ChatTab registers its sendMessage here; PromptStrip calls it
-  const promptActionRef = useRef(null);
-
-  const handlePromptSubmit = (text) => {
-    if (promptActionRef.current) {
-      promptActionRef.current(text);
-    }
-  };
 
   return (
     <div style={{
@@ -73,14 +64,6 @@ export default function SpacemanDrawer({
         {tab === 'chain'   && <ChainTab   chain={spaceman?.chain} mode={mode} />}
         {tab === 'memory'  && <MemoryTab  mems={spaceman?.memory} mode={mode} />}
       </div>
-
-      {(tab === 'chat' || tab === 'editor') && (
-        <PromptStrip
-          mode={mode}
-          activeTab={tab}
-          onSubmit={handlePromptSubmit}
-        />
-      )}
     </div>
   );
 }

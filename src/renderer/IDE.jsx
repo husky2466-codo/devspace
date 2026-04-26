@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import NativeTitleBar from './components/NativeTitleBar.jsx';
 import TopBar from './components/TopBar.jsx';
 import StatusBar from './components/StatusBar.jsx';
@@ -6,6 +6,7 @@ import LeftRail from './components/LeftRail/index.jsx';
 import CollapsedRail from './components/LeftRail/CollapsedRail.jsx';
 import Workspace from './components/Workspace/index.jsx';
 import SpacemanDrawer from './components/SpacemanDrawer/index.jsx';
+import PromptStrip from './components/SpacemanDrawer/PromptStrip.jsx';
 import SettingsModal from './components/SettingsModal.jsx';
 import ComputePopover from './components/ComputePopover.jsx';
 import NewProjectPicker from './components/NewProjectPicker.jsx';
@@ -50,6 +51,10 @@ export default function IDE() {
   const [settingsOpen, setSettingsOpen]     = useState(false);
   const [settingsSection, setSettingsSection] = useState('appearance');
   const [computeOpen, setComputeOpen]       = useState(false);
+
+  // Global prompt strip — ChatTab registers its sendMessage here
+  const promptActionRef = useRef(null);
+  const handlePromptSubmit = (text) => promptActionRef.current?.(text);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', themeId);
@@ -314,6 +319,7 @@ export default function IDE() {
             projectName={activeProject?.name ?? ''}
             branch={activeProject?.branch ?? ''}
             onOpenSettings={() => setSettingsOpen(true)}
+            promptActionRef={promptActionRef}
           />
         ) : (
           <div style={{
@@ -337,6 +343,12 @@ export default function IDE() {
           </div>
         )}
       </div>
+
+      <PromptStrip
+        mode={spacemanMode}
+        activeTab={activeSpaceman?.tab ?? 'chat'}
+        onSubmit={handlePromptSubmit}
+      />
 
       <div style={{ position: 'relative', flexShrink: 0 }}>
         <StatusBar

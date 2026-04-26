@@ -1,6 +1,5 @@
 import SubTabBar from './SubTabBar.jsx';
 import TerminalGrid from './TerminalGrid.jsx';
-import SpacemanPromptStrip from './SpacemanPromptStrip.jsx';
 
 export default function Workspace({
   terminals,
@@ -10,7 +9,6 @@ export default function Workspace({
   onCloseTerm,
   onSpawnTerm,
   onAcknowledge,
-  onPromptSubmit,
 }) {
   return (
     <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
@@ -28,7 +26,6 @@ export default function Workspace({
         onSelect={onSelectTerm}
         onAcknowledge={onAcknowledge}
       />
-      <SpacemanPromptStrip onSubmit={onPromptSubmit} />
     </div>
   );
 }
