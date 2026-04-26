@@ -322,6 +322,24 @@ ipcMain.handle('spaceman:chat', async (event, { messages, model, systemPrompt })
   }
 });
 
+ipcMain.handle('fs:read-file', async (_e, filePath) => {
+  try {
+    const content = await fs.promises.readFile(filePath, 'utf8');
+    return { ok: true, content };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
+ipcMain.handle('fs:write-file', async (_e, filePath, content) => {
+  try {
+    await fs.promises.writeFile(filePath, content, 'utf8');
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
 // ── Window + app ──────────────────────────────────────────────────────────────
 
 function createWindow() {
