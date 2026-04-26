@@ -28,6 +28,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   readFile:  (filePath) => ipcRenderer.invoke('fs:read-file', filePath),
   writeFile: (filePath, content) => ipcRenderer.invoke('fs:write-file', filePath, content),
+  createProject: (opts) => ipcRenderer.invoke('project:create', opts),
 });
 
 contextBridge.exposeInMainWorld('spaceman', {
