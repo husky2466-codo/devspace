@@ -44,7 +44,7 @@ function GuardBtn({ label, primary, onClick }) {
   );
 }
 
-function CodeArea({ file, onDirtyChange }) {
+function CodeArea({ file, onDirtyChange, onCursorChange }) {
   const [content, setContent] = useState('');
   const [loading, setLoading] = useState(true);
   const editorRef = useRef(null);
@@ -53,6 +53,7 @@ function CodeArea({ file, onDirtyChange }) {
   useEffect(() => {
     if (!file?.path) { setContent(''); setLoading(false); return; }
     setLoading(true);
+    onCursorChange?.({ line: 1, col: 1 });
     window.electronAPI?.readFile(file.path).then((res) => {
       if (res?.ok) setContent(res.content);
       else setContent(`// Error reading file: ${res?.error}`);
@@ -61,7 +62,7 @@ function CodeArea({ file, onDirtyChange }) {
       setContent('// Could not read file');
       setLoading(false);
     });
-  }, [file?.path]);
+  }, [file?.path]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleChange = useCallback((value) => {
     setContent(value ?? '');
@@ -71,7 +72,10 @@ function CodeArea({ file, onDirtyChange }) {
   const handleMount = useCallback((editor) => {
     editorRef.current = editor;
     editor.focus();
-  }, []);
+    editor.onDidChangeCursorPosition((e) => {
+      onCursorChange?.({ line: e.position.lineNumber, col: e.position.column });
+    });
+  }, [onCursorChange]);
 
   if (loading) {
     return (
@@ -165,7 +169,7 @@ function EmptyState() {
   );
 }
 
-export default function EditorTab({ file, onClose }) {
+export default function EditorTab({ file, onClose, onCursorChange }) {
   const [findOpen, setFindOpen] = useState(false);
   const [replaceOpen, setReplaceOpen] = useState(false);
   const [query] = useState('caret');
@@ -181,7 +185,8 @@ export default function EditorTab({ file, onClose }) {
     setGhostAccepted(false);
     setDirtyGuard(null);
     setIsDirty(false);
-  }, [file]);
+    onCursorChange?.({ line: 1, col: 1 });
+  }, [file]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const onKey = (e) => {
@@ -398,6 +403,7 @@ export default function EditorTab({ file, onClose }) {
         <CodeArea
           file={file}
           onDirtyChange={setIsDirty}
+          onCursorChange={onCursorChange}
         />
       </div>
 

@@ -51,6 +51,7 @@ export default function IDE() {
   const [settingsOpen, setSettingsOpen]     = useState(false);
   const [settingsSection, setSettingsSection] = useState('appearance');
   const [computeOpen, setComputeOpen]       = useState(false);
+  const [cursorPos, setCursorPos]           = useState({ line: 1, col: 1 });
 
   // Global prompt strip — ChatTab registers its sendMessage here
   const promptActionRef = useRef(null);
@@ -392,6 +393,7 @@ export default function IDE() {
             branch={activeProject?.branch ?? ''}
             onOpenSettings={() => setSettingsOpen(true)}
             promptActionRef={promptActionRef}
+            onCursorChange={setCursorPos}
           />
         ) : (
           <div style={{
@@ -429,6 +431,8 @@ export default function IDE() {
           projectName={activeProject?.name ?? ''}
           modified={activeProject?.dirty ? 2 : 0}
           onComputeClick={() => setComputeOpen((o) => !o)}
+          cursorLine={cursorPos.line}
+          cursorCol={cursorPos.col}
         />
         {computeOpen && (
           <ComputePopover
