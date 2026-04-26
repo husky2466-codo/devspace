@@ -22,23 +22,27 @@ export default function DrawerHeader({ mode, onToggleMode, projectName, branch, 
 
         {/* PROJECT | GLOBAL segmented control */}
         <div
-          onClick={() => onToggleMode(mode === 'project' ? 'global' : 'project')}
+          role="group"
+          aria-label="Spaceman scope"
           style={{
             display: 'inline-flex',
             border: `1px solid ${mode === 'global' ? 'var(--accent-global)' : 'var(--border)'}`,
             fontFamily: 'var(--font-mono)',
             fontSize: 9,
             letterSpacing: '0.1em',
-            cursor: 'pointer',
             marginLeft: 4,
           }}
         >
           {['PROJECT', 'GLOBAL'].map((seg) => {
             const active = (seg === 'PROJECT' && mode === 'project') || (seg === 'GLOBAL' && mode === 'global');
             return (
-              <span
+              <button
                 key={seg}
+                onClick={() => onToggleMode(seg.toLowerCase())}
+                aria-pressed={active}
                 style={{
+                  all: 'unset',
+                  cursor: 'pointer',
                   padding: '2px 7px',
                   color: active ? 'var(--bg)' : 'var(--text-muted)',
                   background: active
@@ -47,7 +51,7 @@ export default function DrawerHeader({ mode, onToggleMode, projectName, branch, 
                 }}
               >
                 {seg}
-              </span>
+              </button>
             );
           })}
         </div>

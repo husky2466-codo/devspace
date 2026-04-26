@@ -13,24 +13,32 @@ export default function DrawerTabBar({ activeTab, onSelectTab, mode, drawerWidth
   const accentColor = mode === 'global' ? 'var(--accent-global)' : 'var(--accent)';
 
   return (
-    <div style={{
-      display: 'flex',
-      borderBottom: '1px solid var(--border)',
-      fontFamily: 'var(--font-mono)',
-      fontSize: 10,
-      flexShrink: 0,
-      background: 'var(--bg-pane)',
-    }}>
+    <div
+      role="tablist"
+      aria-label="Spaceman panels"
+      style={{
+        display: 'flex',
+        borderBottom: '1px solid var(--border)',
+        fontFamily: 'var(--font-mono)',
+        fontSize: 10,
+        flexShrink: 0,
+        background: 'var(--bg-pane)',
+      }}
+    >
       {TABS.map((t) => {
         const active = t === activeTab;
         const disabled = mode === 'global' && (t === 'editor' || t === 'browser');
         const showLabel = !compact || active;
 
         return (
-          <div
+          <button
             key={t}
+            role="tab"
+            aria-selected={active}
+            aria-disabled={disabled}
             onClick={() => !disabled && onSelectTab(t)}
             style={{
+              all: 'unset', boxSizing: 'border-box',
               padding: compact && !active ? '7px 9px' : '7px 12px',
               display: 'flex',
               alignItems: 'center',
@@ -49,7 +57,7 @@ export default function DrawerTabBar({ activeTab, onSelectTab, mode, drawerWidth
           >
             {TAB_GLYPHS[t]}
             {showLabel && <span>{t}</span>}
-          </div>
+          </button>
         );
       })}
       <div style={{ flex: 1 }} />

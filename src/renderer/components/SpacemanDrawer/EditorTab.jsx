@@ -3,10 +3,11 @@ import StatusDot from '../primitives/StatusDot.jsx';
 
 function ToolBtn({ label, title, active, accent, onClick }) {
   return (
-    <span
+    <button
       title={title}
       onClick={onClick}
       style={{
+        all: 'unset',
         padding: '2px 6px',
         fontFamily: 'var(--font-mono)',
         fontSize: 9.5,
@@ -19,15 +20,16 @@ function ToolBtn({ label, title, active, accent, onClick }) {
       }}
     >
       {label}
-    </span>
+    </button>
   );
 }
 
 function GuardBtn({ label, primary, onClick }) {
   return (
-    <span
+    <button
       onClick={onClick}
       style={{
+        all: 'unset',
         padding: '4px 10px',
         fontFamily: 'var(--font-mono)',
         fontSize: 9.5,
@@ -39,7 +41,7 @@ function GuardBtn({ label, primary, onClick }) {
       }}
     >
       {label}
-    </span>
+    </button>
   );
 }
 
@@ -254,12 +256,13 @@ export default function EditorTab({ file, onClose }) {
             </span>
           )}
           <span style={{ flex: 1 }} />
-          <span
+          <button
             onClick={() => file.dirty ? setDirtyGuard('closing') : onClose?.()}
-            style={{ color: 'var(--text-dim)', fontSize: 10, cursor: 'pointer', flexShrink: 0 }}
+            aria-label="Close file"
+            style={{ all: 'unset', color: 'var(--text-dim)', fontSize: 10, cursor: 'pointer', flexShrink: 0 }}
           >
             ×
-          </span>
+          </button>
         </div>
         <div style={{ padding: '0 8px', display: 'flex', alignItems: 'center', gap: 6, borderLeft: '1px solid var(--border)' }}>
           <ToolBtn label="split" />
@@ -428,9 +431,11 @@ export default function EditorTab({ file, onClose }) {
       {/* LSP error panel */}
       {errors.length > 0 && (
         <div style={{ flexShrink: 0, background: 'var(--bg-pane)', borderTop: '1px solid var(--border)' }}>
-          <div
+          <button
             onClick={() => setPanelOpen((o) => !o)}
+            aria-expanded={panelOpen}
             style={{
+              all: 'unset', boxSizing: 'border-box', width: '100%',
               display: 'flex',
               alignItems: 'center',
               gap: 8,
@@ -457,7 +462,7 @@ export default function EditorTab({ file, onClose }) {
             )}
             <span style={{ flex: 1 }} />
             <span style={{ color: 'var(--accent)', fontSize: 9 }}>✦ fix with spaceman</span>
-          </div>
+          </button>
           {panelOpen && (
             <div style={{ maxHeight: 100, overflow: 'auto' }}>
               {errors.map((e, i) => (
