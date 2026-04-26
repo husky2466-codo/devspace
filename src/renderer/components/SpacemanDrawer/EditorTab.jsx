@@ -44,7 +44,7 @@ function GuardBtn({ label, primary, onClick }) {
   );
 }
 
-function CodeArea({ file, onDirtyChange, onCursorChange }) {
+function CodeArea({ file, onDirtyChange, onCursorChange, contentRef, handleSaveRef }) {
   const [content, setContent] = useState('');
   const [loading, setLoading] = useState(true);
   const editorRef = useRef(null);
@@ -55,8 +55,12 @@ function CodeArea({ file, onDirtyChange, onCursorChange }) {
     setLoading(true);
     onCursorChange?.({ line: 1, col: 1 });
     window.electronAPI?.readFile(file.path).then((res) => {
-      if (res?.ok) setContent(res.content);
-      else setContent(`// Error reading file: ${res?.error}`);
+      if (res?.ok) {
+        setContent(res.content);
+        if (contentRef) contentRef.current = res.content;
+      } else {
+        setContent(`// Error reading file: ${res?.error}`);
+      }
       setLoading(false);
     }).catch(() => {
       setContent('// Could not read file');
@@ -65,9 +69,11 @@ function CodeArea({ file, onDirtyChange, onCursorChange }) {
   }, [file?.path]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleChange = useCallback((value) => {
-    setContent(value ?? '');
+    const v = value ?? '';
+    setContent(v);
+    if (contentRef) contentRef.current = v;
     onDirtyChange?.(true);
-  }, [onDirtyChange]);
+  }, [onDirtyChange, contentRef]);
 
   const handleMount = useCallback((editor) => {
     editorRef.current = editor;
@@ -75,7 +81,9 @@ function CodeArea({ file, onDirtyChange, onCursorChange }) {
     editor.onDidChangeCursorPosition((e) => {
       onCursorChange?.({ line: e.position.lineNumber, col: e.position.column });
     });
-  }, [onCursorChange]);
+    // Cmd+S / Ctrl+S inside Monaco — CtrlCmd=2048, KeyS=49
+    editor.addCommand(2048 | 49, () => handleSaveRef?.current?.());
+  }, [onCursorChange, handleSaveRef]);
 
   if (loading) {
     return (
@@ -178,6 +186,10 @@ export default function EditorTab({ file, onClose, onCursorChange }) {
   const [ghostAccepted, setGhostAccepted] = useState(false);
   const [dirtyGuard, setDirtyGuard] = useState(null);
   const [isDirty, setIsDirty] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState(null);
+  const contentRef = useRef('');
+  const handleSaveRef = useRef(null);
 
   useEffect(() => {
     setPanelOpen(!!(file?.errors?.length));
@@ -185,18 +197,42 @@ export default function EditorTab({ file, onClose, onCursorChange }) {
     setGhostAccepted(false);
     setDirtyGuard(null);
     setIsDirty(false);
+    setSaveError(null);
     onCursorChange?.({ line: 1, col: 1 });
   }, [file]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const handleSave = useCallback(async () => {
+    if (!file?.path || !isDirty) return;
+    setSaving(true);
+    setSaveError(null);
+    try {
+      const result = await window.electronAPI?.writeFile(file.path, contentRef.current);
+      if (result?.ok) {
+        setIsDirty(false);
+        setDirtyGuard(null);
+      } else {
+        setSaveError(result?.error ?? 'Save failed');
+      }
+    } catch (err) {
+      setSaveError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  }, [file?.path, isDirty]);
+
+  // Keep the ref in sync so Monaco's addCommand can always call the latest version
+  handleSaveRef.current = handleSave;
+
   useEffect(() => {
     const onKey = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 's') { e.preventDefault(); handleSave(); }
       if ((e.metaKey || e.ctrlKey) && e.key === 'f') { e.preventDefault(); setFindOpen((o) => !o); }
       if ((e.metaKey || e.ctrlKey) && e.key === 'h') { e.preventDefault(); setFindOpen(true); setReplaceOpen(true); }
       if (e.key === 'Escape') { setFindOpen(false); setReplaceOpen(false); setDirtyGuard(null); }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, []);
+  }, [handleSave]);
 
   if (!file) return <EmptyState />;
 
@@ -282,12 +318,17 @@ export default function EditorTab({ file, onClose, onCursorChange }) {
             background: 'var(--bg-sunken)',
             borderTop: '1px solid var(--border)',
           }}>
-            <GuardBtn primary label="⇧⌘S  SAVE" onClick={() => { setDirtyGuard(null); onClose?.(); }} />
+            <GuardBtn primary label={saving ? 'SAVING...' : '⇧⌘S  SAVE'} onClick={async () => { await handleSave(); onClose?.(); }} />
             <GuardBtn label="DISCARD" onClick={() => { setIsDirty(false); setDirtyGuard(null); onClose?.(); }} />
             <GuardBtn label="KEEP OPEN" onClick={() => setDirtyGuard(null)} />
             <span style={{ flex: 1 }} />
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-dim)', alignSelf: 'center' }}>esc</span>
           </div>
+          {saveError && (
+            <div style={{ padding: '4px 12px', fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--err)' }}>
+              {saveError}
+            </div>
+          )}
         </div>
       )}
 
@@ -404,6 +445,8 @@ export default function EditorTab({ file, onClose, onCursorChange }) {
           file={file}
           onDirtyChange={setIsDirty}
           onCursorChange={onCursorChange}
+          contentRef={contentRef}
+          handleSaveRef={handleSaveRef}
         />
       </div>
 
