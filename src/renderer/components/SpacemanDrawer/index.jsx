@@ -23,6 +23,7 @@ export default function SpacemanDrawer({
   onOpenSettings,
   promptActionRef,
   onCursorChange,
+  monacoTheme,
 }) {
   const tab = spaceman?.tab ?? 'chat';
 
@@ -65,7 +66,7 @@ export default function SpacemanDrawer({
           />
         )}
         {tab === 'browser' && mode === 'project' && <BrowserTab items={spaceman?.browser?.items ?? []} />}
-        {tab === 'editor'  && <EditorTab  file={editorFile} onClose={onCloseEditor} onCursorChange={onCursorChange} />}
+        {tab === 'editor'  && <EditorTab  file={editorFile} onClose={onCloseEditor} onCursorChange={onCursorChange} monacoTheme={monacoTheme} />}
         {tab === 'chain'   && <ChainTab   chain={spaceman?.chain} mode={mode} />}
         {tab === 'memory'  && <MemoryTab  mems={spaceman?.memory} mode={mode} />}
       </div>
