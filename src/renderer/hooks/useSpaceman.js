@@ -69,11 +69,12 @@ export function useSpaceman({ projectId, projectName, branch, mode }) {
     try {
       await window.spaceman.chat({
         messages: nextMessages,
-        model: 'claude-sonnet-4-6',
+        model: 'claude-sonnet-4-6',  // Haiku: claude-haiku-4-5-20251001 — never Opus
         systemPrompt,
       });
     } catch (err) {
-      if (err.message !== 'NO_KEY') setError(err.message);
+      const msg = err.message ?? String(err);
+      if (msg !== 'NO_KEY') setError(msg);
       setStreaming(false);
       setStreamingText('');
     }

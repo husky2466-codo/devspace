@@ -78,6 +78,7 @@ function MessageBubble({ msg, accentColor }) {
         letterSpacing: '0.1em',
         color: isUser ? 'var(--text-dim)' : accentColor,
         marginBottom: 5,
+        userSelect: 'none',
       }}>
         {isUser ? 'you' : 'spaceman · sonnet'}
       </div>
@@ -86,6 +87,8 @@ function MessageBubble({ msg, accentColor }) {
         color: 'var(--text)',
         whiteSpace: 'pre-wrap',
         wordBreak: 'break-word',
+        userSelect: 'text',
+        cursor: 'text',
       }}>
         {msg.content}
       </div>
@@ -99,12 +102,14 @@ function StreamingBubble({ text, accentColor }) {
       <div style={{
         fontFamily: 'var(--font-mono)', fontSize: 9.5,
         letterSpacing: '0.1em', color: accentColor, marginBottom: 5,
+        userSelect: 'none',
       }}>
         spaceman · sonnet
       </div>
       <div style={{
         fontSize: 12.5, lineHeight: 1.6, color: 'var(--text)',
         whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+        userSelect: 'text', cursor: 'text',
       }}>
         {text}
         <span style={{
@@ -151,7 +156,7 @@ export default function ChatTab({ mode, projectName, branch, onPromptRef }) {
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
       {/* Message list */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '14px 14px 0' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '14px 14px 0', userSelect: 'text' }}>
         {showEmpty && (
           <div style={{ paddingTop: 32, textAlign: 'center' }}>
             <div style={{
@@ -189,10 +194,16 @@ export default function ChatTab({ mode, projectName, branch, onPromptRef }) {
 
         {error && error !== 'NO_KEY' && (
           <div style={{
+            margin: '8px 0',
+            padding: '8px 10px',
+            background: 'color-mix(in srgb, var(--err) 8%, transparent)',
+            border: '1px solid color-mix(in srgb, var(--err) 30%, transparent)',
+            borderLeft: '2px solid var(--err)',
             fontFamily: 'var(--font-mono)', fontSize: 10,
-            color: 'var(--err)', padding: '8px 0',
+            color: 'var(--err)', lineHeight: 1.5,
+            userSelect: 'text', cursor: 'text',
           }}>
-            ✗ {error}
+            {error}
           </div>
         )}
 
