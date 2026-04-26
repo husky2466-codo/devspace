@@ -202,6 +202,60 @@ ipcMain.handle('fs:unwatch', (_event, projectId) => {
   }
 });
 
+// ── PTY handlers ──────────────────────────────────────────────────────────────
+
+const pty = require('node-pty');
+const os = require('os');
+
+// Map of termId -> pty process
+const ptyProcesses = new Map();
+
+// Spawn a new pty
+ipcMain.handle('pty:spawn', (event, { termId, cwd, cols, rows }) => {
+  const shell = process.env.SHELL || (process.platform === 'win32' ? 'powershell.exe' : 'bash');
+  const ptyProcess = pty.spawn(shell, [], {
+    name: 'xterm-256color',
+    cols: cols || 80,
+    rows: rows || 24,
+    cwd: cwd || os.homedir(),
+    env: { ...process.env, TERM: 'xterm-256color', COLORTERM: 'truecolor' },
+  });
+
+  ptyProcess.onData((data) => {
+    if (!event.sender.isDestroyed()) {
+      event.sender.send(`pty:data:${termId}`, data);
+    }
+  });
+
+  ptyProcess.onExit(() => {
+    ptyProcesses.delete(termId);
+    if (!event.sender.isDestroyed()) {
+      event.sender.send(`pty:exit:${termId}`);
+    }
+  });
+
+  ptyProcesses.set(termId, ptyProcess);
+  return { ok: true };
+});
+
+// Write input to pty
+ipcMain.handle('pty:write', (_event, { termId, data }) => {
+  const p = ptyProcesses.get(termId);
+  if (p) p.write(data);
+});
+
+// Resize pty
+ipcMain.handle('pty:resize', (_event, { termId, cols, rows }) => {
+  const p = ptyProcesses.get(termId);
+  if (p) p.resize(cols, rows);
+});
+
+// Kill pty
+ipcMain.handle('pty:kill', (_event, termId) => {
+  const p = ptyProcesses.get(termId);
+  if (p) { p.kill(); ptyProcesses.delete(termId); }
+});
+
 // ── IPC handlers ──────────────────────────────────────────────────────────────
 
 // Check whether a key is stored
